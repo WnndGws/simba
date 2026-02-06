@@ -2,7 +2,7 @@
 ## Recieves UDP data and adds it to a queue
 ## after some very basic filtering
 
-import multiprocessing as mp
+import multiprocessing
 import socket
 import struct
 import sys
@@ -28,28 +28,25 @@ logger.configure(
 )
 
 
-# 1 MB socket buffer; tune upward if kernel drops packets
-SO_RCVBUF_SIZE = 1_048_576
-
-
 def udp_receiver(
     bind_addr: str,
     bind_port: int,
-    queue: mp.Queue,
+    queue: multiprocessing.Queue,
     max_qsize: int = 100_000,
     chunk_size: int = 65_507,  ## The largest UDP payload over IPv4
-    stop_event: mp.synchronize.Event | None = None,
+    stop_event: multiprocessing.synchronize.Event | None = None,
 ) -> None:
 
     # any other process can call stop_event.set() to break the loop and exit cleanly
     if stop_event is None:
-        stop_event = mp.Event()
+        stop_event = multiprocessing.Event()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, SO_RCVBUF_SIZE)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 * chunk_size)
+        sock.settimeout(0.2)  # non-blocking check for stop_event
     sock.bind((bind_addr, bind_port))
 
-    logging.info("UDP receiver listening on %s:%d", bind_addr, bind_port)
+    logger.info("UDP receiver listening on %s:%d", bind_addr, bind_port)
 
     try:
         while not stop_event.is_set():
@@ -57,12 +54,11 @@ def udp_receiver(
                 data, _ = sock.recvfrom(chunk_size)
                 if queue.qsize() < max_qsize:
                     queue.put_nowait(data)
-            except OSError:
-                # Ignore transient errors; keep spinning
+            except socket.timeout:
                 continue
     finally:
         sock.close()
-        logging.info("UDP receiver shutdown complete")
+        logger.info("UDP receiver shutdown complete")
 
 
 if __name__ == "__main__":
