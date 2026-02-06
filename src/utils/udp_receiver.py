@@ -43,7 +43,7 @@ def udp_receiver(
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2 * chunk_size)
-        sock.settimeout(0.2)  # non-blocking check for stop_event
+    sock.settimeout(0.2)  # non-blocking check for stop_event
     sock.bind((bind_addr, bind_port))
 
     logger.info("UDP receiver listening on %s:%d", bind_addr, bind_port)
@@ -52,9 +52,10 @@ def udp_receiver(
         while not stop_event.is_set():
             try:
                 data, _ = sock.recvfrom(chunk_size)
+                logger.trace(data)
                 if queue.qsize() < max_qsize:
                     queue.put_nowait(data)
-            except socket.timeout:
+            except TimeoutError:
                 continue
     finally:
         sock.close()
