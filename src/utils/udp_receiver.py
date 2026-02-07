@@ -52,6 +52,7 @@ def udp_receiver(
             try:
                 data, _ = sock.recvfrom(chunk_size)
                 logger.trace(data)
+                logger.critical(f"Raw Queue size: {output.qsize()}")
                 if output.qsize() < max_qsize:
                     output.put_nowait(data)
             except TimeoutError:

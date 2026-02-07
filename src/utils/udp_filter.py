@@ -116,6 +116,7 @@ def decode_worker(
         stop_event = multiprocessing.Event()
 
     logger.info("Decoding of stack started")
+    logger.critical(f"Decode Queue size: {ingest.qsize()}")
     try:
         while not stop_event.is_set():
             try:
