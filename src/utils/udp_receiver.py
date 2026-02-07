@@ -4,7 +4,6 @@
 
 import multiprocessing
 import socket
-import struct
 import sys
 from typing import Optional
 
@@ -31,7 +30,7 @@ logger.configure(
 def udp_receiver(
     bind_addr: str,
     bind_port: int,
-    queue: multiprocessing.Queue,
+    output: multiprocessing.Queue,
     max_qsize: int = 100_000,
     chunk_size: int = 65_507,  ## The largest UDP payload over IPv4
     stop_event: multiprocessing.synchronize.Event | None = None,
@@ -53,10 +52,13 @@ def udp_receiver(
             try:
                 data, _ = sock.recvfrom(chunk_size)
                 logger.trace(data)
-                if queue.qsize() < max_qsize:
-                    queue.put_nowait(data)
+                if output.qsize() < max_qsize:
+                    output.put_nowait(data)
             except TimeoutError:
                 continue
+            except KeyboardInterrupt:
+                logger.info("Recieved KeyboardInterrupt. Stopping")
+                stop_event.set()
     finally:
         sock.close()
         logger.info("UDP receiver shutdown complete")

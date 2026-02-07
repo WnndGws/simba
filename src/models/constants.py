@@ -3,6 +3,8 @@
 
 from typing import Final
 
+from models import classes
+
 PACKET_HEADER_LENGTH: Final[int] = 29  # <HBBBBBQfLLBB
 
 GRID_SIZE: Final[int] = 22  # cars in the race
@@ -21,39 +23,41 @@ NULL_BYTE_VALUE: Final[int] = 255  # as per documentation
 
 NAME_SIZE: Final[int] = 48  # max driver name len
 
-PACKET_ID_DICT: Final[dict[int:str]] = {
-    0: "MOTION",
-    1: "SESSION",
-    2: "LAP_DATA",
-    3: "EVENT",
-    4: "PARTICIPANTS",
-    5: "CAR_SETUPS",
-    6: "CAR_TELEMETRY",
-    7: "CAR_STATUS",
-    8: "FINAL_CLASSIFICATION",
-    9: "LOBBY_INFO",
-    10: "CAR_DAMAGE",
-    11: "SESSION_HISTORY",
+# Where they don't have a class, its because I skipped them in the classes file
+# This allows me to use it as a crude lookup-table to recursively decode them
+PACKET_CLASS_DICT: Final[dict[int:type]] = {
+    0: classes.Motion,
+    1: classes.SessionData,
+    2: classes.LapDataPacket,
+    3: classes.EventPacket,
+    4: classes.ParticipantsPacket,
+    # 5: classes.CarSetupPacket,
+    # 6: classes.CarTelemetryData,
+    7: classes.CarStatusPacket,
+    # 8: classes.FinalClassificationPacket,
+    # 9: classes.LobbyInfoPacket,
+    10: classes.CarDamagePacket,
+    # 11: classes.SessionHistoryPacket,
 }
 
-EVENT_DICT: Final[dict[str:str]] = {
+EVENT_DICT: Final[dict[str:type]] = {
     "SSTA": "SESSION_START",
     "SEND": "SESSION_END",
-    "FTLP": "FASTEST_LAP",
-    "RTMT": "RETIREMENT",
+    "FTLP": classes.FastestLapData,
+    "RTMT": classes.CarRetirementData,
     "DRSE": "DRS_ENABLED",
-    "DRSD": "DRS_DISABLED",
-    "TMPT": "TEAM_MATE_IN_PITS",
+    "DRSD": classes.DrsDisabledData,
+    "TMPT": classes.TeammateInPitData,
     "CHQF": "CHEQUERED_FLAG",
-    "RCWN": "RACE_WINNER",
-    "PENA": "PENALTY",
-    "SPTP": "SPEED_TRAP",
-    "STLG": "START_LIGHTS",
+    "RCWN": classes.RaceWinnerData,
+    "PENA": classes.PenaltyData,
+    "SPTP": classes.SpeedTrapData,
+    "STLG": classes.StartLightsData,
     "LGOT": "LIGHTS_OUT",
-    "DTSV": "DRIVE_THROUGH_SERVED",
-    "SGSV": "STOP_GO_SERVED",
-    "FLBK": "FLASHBACK",
-    "BUTN": "BUTTON",
+    "DTSV": classes.DriveThroughPenaltyData,
+    "SGSV": classes.StopGoPenaltyServedData,
+    "FLBK": classes.FlashbackData,
+    "BUTN": classes.ButtonPressedData,
 }
 
 FORMALA_CLASSIFICATION_DICT: Final[dict[int:str]] = {
@@ -147,7 +151,7 @@ DRIVER_ID_DICT = {
     165: "Andrea-Kimi Antonelli",
     166: "Ritomo Miyata",
     167: "Rafael Villagómez",
-    168: "Zak O’Sullivan",
+    168: "Zak O`Sullivan",
     169: "Pepe Marti",
     170: "Sonny Hayes",
     171: "Joshua Pearce",

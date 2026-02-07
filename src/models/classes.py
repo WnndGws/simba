@@ -6,439 +6,567 @@
 ## All data is littleEndian
 ## le/ge values are just the c-types converted to bit length
 
-from typing import Annotated
-
-from pydantic import BaseModel, Field
-
-
-class Header(BaseModel):
-    packet_format: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    game_year: Annotated[int, Field(strict=True, ge=0, le=255)]
-    game_major_version: Annotated[int, Field(strict=True, ge=0, le=255)]
-    game_minor_version: Annotated[int, Field(strict=True, ge=0, le=255)]
-    packet_version: Annotated[int, Field(strict=True, ge=0, le=255)]
-    packet_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    session_uuid: Annotated[int, Field(strict=True, ge=0, le=18446744073709551615)]
-    session_time: Annotated[float, Field(strict=True)]
-    frame_id: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    overall_frame: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    player_car_index: Annotated[int, Field(strict=True, ge=0, le=255)]
-    player2_car_index: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class Motion(BaseModel):
-    header: Header
-    world_position_x: Annotated[float, Field(strict=True)]
-    world_position_y: Annotated[float, Field(strict=True)]
-    world_position_z: Annotated[float, Field(strict=True)]
-    world_velocity_x: Annotated[float, Field(strict=True)]
-    world_velocity_y: Annotated[float, Field(strict=True)]
-    world_velocity_z: Annotated[float, Field(strict=True)]
-    world_forward_direction_x: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    world_forward_direction_y: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    world_forward_direction_z: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    world_right_direction_x: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    world_right_direction_y: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    world_right_direction_z: Annotated[int, Field(strict=True, ge=-32768, le=32767)]
-    g_force_lateral: Annotated[float, Field(strict=True)]
-    g_force_longitudinal: Annotated[float, Field(strict=True)]
-    g_force_vertical: Annotated[float, Field(strict=True)]
-    yaw_radians: Annotated[float, Field(strict=True)]
-    pitch_radians: Annotated[float, Field(strict=True)]
-    roll_radians: Annotated[float, Field(strict=True)]
-
-
-class MarshalZone(BaseModel):
-    zone_start_at_lap_percentage: Annotated[float, Field(strict=True)]
-    zone_flag_type: Annotated[int, Field(strict=True, ge=-128, le=127)]
-
-
-class WeatherForcast(BaseModel):
-    session_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    time_offset: Annotated[int, Field(strict=True, ge=0, le=255)]
-    weather: Annotated[int, Field(strict=True, ge=0, le=255)]
-    track_temp_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    track_temp_change_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    air_temp_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    air_temp_change_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    rain_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class SessionData(BaseModel):
-    header: Header
-    weather: Annotated[int, Field(strict=True, ge=0, le=255)]
-    track_temp_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    air_temp_c: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    total_race_laps: Annotated[int, Field(strict=True, ge=0, le=255)]
-    track_length_m: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    session_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    track_id: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    formula: Annotated[int, Field(strict=True, ge=0, le=255)]
-    session_time_remaining_seconds: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    session_duration_seconds: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    pit_speed_limit_kph: Annotated[int, Field(strict=True, ge=0, le=255)]
-    game_paused: Annotated[int, Field(strict=True, ge=0, le=255)]
-    is_spectating: Annotated[int, Field(strict=True, ge=0, le=255)]
-    spectator_car_index: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sli_pro_native_support: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_marshal_zones: Annotated[int, Field(strict=True, ge=0, le=255)]
-    list_of_marshal_zones: list[MarshalZone] = Field(min_items=21, max_items=21)
-    safety_car_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-    network_game: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_weather_forcast_samples: Annotated[int, Field(strict=True, ge=0, le=255)]
-    weather_forcasts: list[WeatherForcast] = Field(min_items=64, max_items=64)
-    weather_forecast_accuracy: Annotated[int, Field(strict=True, ge=0, le=255)]
-    ai_difficulty_level: Annotated[int, Field(strict=True, ge=0, le=255)]
-    season_link_id: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    weekend_link_id: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    session_link_id: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    pit_stop_ideal_lap: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_stop_latest_lap: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_stop_rejoin_position: Annotated[int, Field(strict=True, ge=0, le=255)]
-    steering_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    braking_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    gearbox_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_release_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    ers_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    drs_assist: Annotated[int, Field(strict=True, ge=0, le=255)]
-    dynamic_racing_line: Annotated[int, Field(strict=True, ge=0, le=255)]
-    dynamic_racing_line_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    game_mode: Annotated[int, Field(strict=True, ge=0, le=255)]
-    ruleset: Annotated[int, Field(strict=True, ge=0, le=255)]
-    time_of_day: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    session_length: Annotated[int, Field(strict=True, ge=0, le=255)]
-    speed_units_player1: Annotated[int, Field(strict=True, ge=0, le=255)]
-    temp_units_player1: Annotated[int, Field(strict=True, ge=0, le=255)]
-    speed_units_player2: Annotated[int, Field(strict=True, ge=0, le=255)]
-    temp_units_player2: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_safetycar_incidents: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_virtualsafetycar_incidents: Annotated[
-        int, Field(strict=True, ge=0, le=255)
-    ]
-    number_of_red_flags: Annotated[int, Field(strict=True, ge=0, le=255)]
-    equal_car_performance: Annotated[int, Field(strict=True, ge=0, le=255)]
-    recovery_mode: Annotated[int, Field(strict=True, ge=0, le=255)]
-    flashback_limit: Annotated[int, Field(strict=True, ge=0, le=255)]
-    surface_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    low_fuel_mode: Annotated[int, Field(strict=True, ge=0, le=255)]
-    race_starts: Annotated[int, Field(strict=True, ge=0, le=255)]
-    tyre_temps: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_lane_tyre_sim: Annotated[int, Field(strict=True, ge=0, le=255)]
-    car_damage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    car_damage_rate: Annotated[int, Field(strict=True, ge=0, le=255)]
-    collisions: Annotated[int, Field(strict=True, ge=0, le=255)]
-    collisions_first_lap_only: Annotated[int, Field(strict=True, ge=0, le=255)]
-    multiplayer_unsafe_pit_release: Annotated[int, Field(strict=True, ge=0, le=255)]
-    multiplayer_kick_for_griefing: Annotated[int, Field(strict=True, ge=0, le=255)]
-    corner_cutting_stringency: Annotated[int, Field(strict=True, ge=0, le=255)]
-    parc_ferme: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_stop_experience: Annotated[int, Field(strict=True, ge=0, le=255)]
-    safety_car: Annotated[int, Field(strict=True, ge=0, le=255)]
-    safety_car_experience: Annotated[int, Field(strict=True, ge=0, le=255)]
-    formation_lap: Annotated[int, Field(strict=True, ge=0, le=255)]
-    formation_lap_experience: Annotated[int, Field(strict=True, ge=0, le=255)]
-    red_flags: Annotated[int, Field(strict=True, ge=0, le=255)]
-    affects_licence_level_solo: Annotated[int, Field(strict=True, ge=0, le=255)]
-    affects_licence_level_multiplayer: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_sessions_in_weekend: Annotated[int, Field(strict=True, ge=0, le=255)]
-    weekend_structure: list[int] = Field(min_items=12, max_items=12)
-    sector_2_start_distance_m: Annotated[float, Field(strict=True)]
-    sector_3_start_distance_m: Annotated[float, Field(strict=True)]
-
-
-class LapData(BaseModel):
-    last_lap_time_ms: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    current_lap_time_ms: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    sector1_time_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    sector1_time_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sector2_time_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    sector2_time_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    delta_to_car_in_front_ms_component: Annotated[
-        int, Field(strict=True, ge=0, le=65535)
-    ]
-    delta_to_car_in_front_minutes_component: Annotated[
-        int, Field(strict=True, ge=0, le=255)
-    ]
-    delta_to_leader_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    delta_to_leader_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    lap_distance_travelled_m: Annotated[float, Field(strict=True)]
-    session_distance_travelled_m: Annotated[float, Field(strict=True)]
-    safety_car_delta: Annotated[float, Field(strict=True)]
-    car_position: Annotated[int, Field(strict=True, ge=0, le=255)]
-    current_lap_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_pit_stops: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sector: Annotated[int, Field(strict=True, ge=0, le=255)]
-    current_lap_invalid: Annotated[int, Field(strict=True, ge=0, le=255)]
-    penalties: Annotated[int, Field(strict=True, ge=0, le=255)]
-    total_warnings: Annotated[int, Field(strict=True, ge=0, le=255)]
-    corner_cutting_warnings: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_unserved_drive_through_pens: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_unserved_stop_go_pens: Annotated[int, Field(strict=True, ge=0, le=255)]
-    grid_position: Annotated[int, Field(strict=True, ge=0, le=255)]
-    driver_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-    result_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_lane_timer_active: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_lane_time_ms: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    pit_lane_stop_time_ms: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    pit_stop_must_serve_pen: Annotated[int, Field(strict=True, ge=0, le=255)]
-    fastest_speed_trap_speed_kph: Annotated[float, Field(strict=True)]
-    fastest_speed_trap_lap: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class LapDataPacket(BaseModel):
-    header: Header
-    cars: list[LapData] = Field(min_items=22, max_items=22)
-    timetrial_pb: Annotated[int, Field(strict=True, ge=0, le=255)]
-    timetrial_rival_car_index: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class LapHistoryData(BaseModel):
-    lap_time_ms: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    sector1_time_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    sector1_time_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sector2_time_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    sector2_time_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sector3_time_ms_component: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    sector3_time_minutes_component: Annotated[int, Field(strict=True, ge=0, le=255)]
-    lap_valid_bit_flags: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class TyreHistoryData(BaseModel):
-    tyre_replaced_lap: Annotated[int, Field(strict=True, ge=0, le=255)]
-    tyre_actual_compound: Annotated[int, Field(strict=True, ge=0, le=255)]
-    tyre_visual_compound: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class LapHistoryPacket(BaseModel):
-    header: Header
-    relevant_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_laps_in_data: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_tyre_stints: Annotated[int, Field(strict=True, ge=0, le=255)]
-    best_lap_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    best_s1_lap_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    best_s2_lap_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    best_s3_lap_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    lap_history_data: list[LapHistoryData] = Field(min_items=100, max_items=100)
-    tyre_history_data: list[TyreHistoryData] = Field(min_items=8, max_items=8)
-
-
-class CarStatusData(BaseModel):
-    traction_control: Annotated[int, Field(strict=True, ge=0, le=255)]
-    anti_lock_brakes: Annotated[int, Field(strict=True, ge=0, le=255)]
-    fuel_mix: Annotated[int, Field(strict=True, ge=0, le=255)]
-    front_brake_bias: Annotated[int, Field(strict=True, ge=0, le=255)]
-    pit_limiter_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-    current_fuel_in_tank_kg: Annotated[float, Field(strict=True)]
-    fuel_capacity: Annotated[float, Field(strict=True)]
-    fuel_remaining_laps: Annotated[float, Field(strict=True)]
-    max_rpm: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    idle_rpm: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    max_gears: Annotated[int, Field(strict=True, ge=0, le=255)]
-    drs_allowed: Annotated[int, Field(strict=True, ge=0, le=255)]
-    drs_activated_in_distance: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    actual_tyre_compound: Annotated[int, Field(strict=True, ge=0, le=255)]
-    visual_tyre_compound: Annotated[int, Field(strict=True, ge=0, le=255)]
-    tyre_age_laps: Annotated[int, Field(strict=True, ge=0, le=255)]
-    vehicle_flags_shown: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    engine_power_ice: Annotated[float, Field(strict=True)]
-    engine_power_mguk: Annotated[float, Field(strict=True)]
-    ers_store_energy: Annotated[float, Field(strict=True)]
-    ers_deploy_mode: Annotated[int, Field(strict=True, ge=0, le=255)]
-    ers_harvested_mguk: Annotated[float, Field(strict=True)]
-    ers_harvested_mgu_h: Annotated[float, Field(strict=True)]
-    ers_deployed_this_lap: Annotated[float, Field(strict=True)]
-    network_paused: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class CarStatusPacket(BaseModel):
-    header: Header
-    cars: list[CarStatusData] = Field(min_items=22, max_items=22)
-
-
-class CarDamageData(BaseModel):
-    tyre_wear_percentage: Annotated[float, Field(strict=True)]
-    tyre_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    brakes_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    tyre_blisters_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    front_wing_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    rear_wing_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    floor_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    diffuser_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    sidepod_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    drs_fault: Annotated[int, Field(strict=True, ge=0, le=255)]
-    ers_fault: Annotated[int, Field(strict=True, ge=0, le=255)]
-    gearbox_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_damage_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_mguh_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_es_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_ce_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_ice_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_mguk_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_tc_wear_percentage: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_blown: Annotated[int, Field(strict=True, ge=0, le=255)]
-    engine_seized: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class CarDamagePacket(BaseModel):
-    header: Header
-    cars: list[CarDamageData] = Field(min_items=22, max_items=22)
-
-
-class LiveryColours(BaseModel):
-    red: Annotated[int, Field(strict=True, ge=0, le=255)]
-    green: Annotated[int, Field(strict=True, ge=0, le=255)]
-    blue: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class ParticipantData(BaseModel):
-    is_ai_controlled_flag: Annotated[int, Field(strict=True, ge=0, le=255)]
-    driver_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    network_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    team_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    my_team_flag: Annotated[int, Field(strict=True, ge=0, le=255)]
-    race_number: Annotated[int, Field(strict=True, ge=0, le=255)]
-    nationality: Annotated[int, Field(strict=True, ge=0, le=255)]
-    name: bytes
-    network_telemetry_flag: Annotated[int, Field(strict=True, ge=0, le=255)]
-    show_online_names: Annotated[int, Field(strict=True, ge=0, le=255)]
-    f1_world_tech_level: Annotated[int, Field(strict=True, ge=0, le=65535)]
-    platform: Annotated[int, Field(strict=True, ge=0, le=255)]
-    number_of_colours: Annotated[int, Field(strict=True, ge=0, le=255)]
-    livery_colours: list[LiveryColours] = Field(min_items=4, max_items=4)
-
-
-class ParticipantsPacket(BaseModel):
-    header: Header
-    number_of_active_cars: Annotated[int, Field(strict=True, ge=-128, le=127)]
-    participant_data: list[ParticipantData] = Field(min_items=22, max_items=22)
-
-
-class FastestLapData(BaseModel):
-    fastest_lap_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    fastest_lap_seconds: Annotated[float, Field(strict=True)]
-
-
-class CarRetirementData(BaseModel):
-    retired_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    retirement_reason: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class DrsDisabledData(BaseModel):
-    drs_disabled_reason: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class TeammateInPitData(BaseModel):
-    car_index_of_teammate: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class RaceWinnerData(BaseModel):
-    car_index_of_winner: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class PenaltyData(BaseModel):
-    penalty_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    infringement_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    car_id_of_criminal: Annotated[int, Field(strict=True, ge=0, le=255)]
-    car_id_of_victim: Annotated[int, Field(strict=True, ge=0, le=255)]
-    time_gained: Annotated[int, Field(strict=True, ge=0, le=255)]
-    lap_number_of_offence: Annotated[int, Field(strict=True, ge=0, le=255)]
-    places_gained: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class SpeedTrapData(BaseModel):
-    car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    speed_kph: Annotated[float, Field(strict=True)]
-    is_overall_fastest_in_session: Annotated[int, Field(strict=True, ge=0, le=255)]
-    is_fastest_for_driver_session: Annotated[int, Field(strict=True, ge=0, le=255)]
-    car_id_of_fastest_in_session: Annotated[int, Field(strict=True, ge=0, le=255)]
-    fastest_speed_in_session_kph: Annotated[float, Field(strict=True)]
-
-
-class StartLightsData(BaseModel):
-    number_of_lights_lit: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class DriveThroughPenaltyData(BaseModel):
-    car_id_of_serving_car: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class StopGoPenaltyServedData(BaseModel):
-    car_id_of_serving_car: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class FlashbackData(BaseModel):
-    flashback_frame_id: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-    flashback_to_time: Annotated[float, Field(strict=True)]
-
-
-class ButtonPressedData(BaseModel):
-    button_pressed: Annotated[int, Field(strict=True, ge=0, le=4294967295)]
-
-
-class OvertakeData(BaseModel):
-    overtaking_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    overtook_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class CollisionData(BaseModel):
-    first_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-    second_car_id: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class SafetycarData(BaseModel):
-    safety_car_type: Annotated[int, Field(strict=True, ge=0, le=255)]
-    safety_car_status: Annotated[int, Field(strict=True, ge=0, le=255)]
-
-
-class EventDetails(BaseModel):
-    fastest_lap: FastestLapData | None = None
-    retirement: CarRetirementData | None = None
-    teammate_in_pits: TeammateInPitData | None = None
-    race_winner: RaceWinnerData | None = None
-    penalty_type: PenaltyData | None = None
-    speedtrap: SpeedTrapData | None = None
-    start_lights: StartLightsData | None = None
-    drive_through_penalty_served: DriveThroughPenaltyData | None = None
-    stop_go_penalty_served: StopGoPenaltyServedData | None = None
-    flashback_info: FlashbackData | None = None
-    button_pressed: ButtonPressedData | None = None
-
-
-class EventPacket(BaseModel):
-    header: Header
-    event_code_string: bytes
-    event_details: EventDetails
-
-
-class CarSetupPacket(BaseModel):
+from ctypes import (
+    LittleEndianStructure,
+    Union,
+    c_char,
+    c_float,
+    c_int8,
+    c_int16,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    c_uint64,
+)
+from typing import ClassVar
+
+
+class Header(LittleEndianStructure):
+    # Need to specify packing
+    # https://wumb0.in/a-better-way-to-work-with-raw-data-types-in-python.html
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("packet_format", c_uint16),
+        ("game_year", c_uint8),
+        ("game_major_version", c_uint8),
+        ("game_minor_version", c_uint8),
+        ("packet_version", c_uint8),
+        ("packet_id", c_uint8),
+        ("session_uuid", c_uint64),
+        ("session_time", c_float),
+        ("frame_id", c_uint32),
+        ("overall_frame", c_uint32),
+        ("player_car_index", c_uint8),
+        ("player2_car_index", c_uint8),
+    )
+
+
+class Motion(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("world_position_x", c_float),
+        ("world_position_y", c_float),
+        ("world_position_z", c_float),
+        ("world_velocity_x", c_float),
+        ("world_velocity_y", c_float),
+        ("world_velocity_z", c_float),
+        ("world_forward_direction_x", c_int16),
+        ("world_forward_direction_y", c_int16),
+        ("world_forward_direction_z", c_int16),
+        ("world_right_direction_x", c_int16),
+        ("world_right_direction_y", c_int16),
+        ("world_right_direction_z", c_int16),
+        ("g_force_lateral", c_float),
+        ("g_force_longitudinal", c_float),
+        ("g_force_vertical", c_float),
+        ("yaw_radians", c_float),
+        ("pitch_radians", c_float),
+        ("roll_radians", c_float),
+    )
+
+
+class MarshalZone(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("zone_start_at_lap_percentage", c_float),
+        ("zone_flag_type", c_int8),
+    )
+
+
+class WeatherForcast(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("session_type", c_uint8),
+        ("time_offset", c_uint8),
+        ("weather", c_uint8),
+        ("track_temp_c", c_int8),
+        ("track_temp_change_c", c_int8),
+        ("air_temp_c", c_int8),
+        ("air_temp_change_c", c_int8),
+        ("rain_percentage", c_uint8),
+    )
+
+
+class MarshalZone_21(MarshalZone * 21):
     pass
 
 
-class CarTelemetryData(BaseModel):
+class WeatherForcast_64(WeatherForcast * 64):
     pass
 
 
-class FinalClassificationPacket(BaseModel):
+class SessionData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("weather", c_uint8),
+        ("track_temp_c", c_int8),
+        ("air_temp_c", c_int8),
+        ("total_race_laps", c_uint8),
+        ("track_length_m", c_uint16),
+        ("session_type", c_uint8),
+        ("track_id", c_int8),
+        ("formula", c_uint8),
+        ("session_time_remaining_seconds", c_uint16),
+        ("session_duration_seconds", c_uint16),
+        ("pit_speed_limit_kph", c_uint8),
+        ("game_paused", c_uint8),
+        ("is_spectating", c_uint8),
+        ("spectator_car_index", c_uint8),
+        ("sli_pro_native_support", c_uint8),
+        ("number_of_marshal_zones", c_uint8),
+        ("list_of_marshal_zones", (MarshalZone_21)),
+        ("safety_car_status", c_uint8),
+        ("network_game", c_uint8),
+        ("number_of_weather_forcast_samples", c_uint8),
+        ("weather_forcasts", (WeatherForcast_64)),
+        ("weather_forecast_accuracy", c_uint8),
+        ("ai_difficulty_level", c_uint8),
+        ("season_link_id", c_uint32),
+        ("weekend_link_id", c_uint32),
+        ("session_link_id", c_uint32),
+        ("pit_stop_ideal_lap", c_uint8),
+        ("pit_stop_latest_lap", c_uint8),
+        ("pit_stop_rejoin_position", c_uint8),
+        ("steering_assist", c_uint8),
+        ("braking_assist", c_uint8),
+        ("gearbox_assist", c_uint8),
+        ("pit_assist", c_uint8),
+        ("pit_release_assist", c_uint8),
+        ("ers_assist", c_uint8),
+        ("drs_assist", c_uint8),
+        ("dynamic_racing_line", c_uint8),
+        ("dynamic_racing_line_type", c_uint8),
+        ("game_mode", c_uint8),
+        ("ruleset", c_uint8),
+        ("time_of_day", c_uint32),
+        ("session_length", c_uint8),
+        ("speed_units_player1", c_uint8),
+        ("temp_units_player1", c_uint8),
+        ("speed_units_player2", c_uint8),
+        ("temp_units_player2", c_uint8),
+        ("number_of_safetycar_incidents", c_uint8),
+        ("number_of_virtualsafetycar_incidents", c_uint8),
+        ("number_of_red_flags", c_uint8),
+        ("equal_car_performance", c_uint8),
+        ("recovery_mode", c_uint8),
+        ("flashback_limit", c_uint8),
+        ("surface_type", c_uint8),
+        ("low_fuel_mode", c_uint8),
+        ("race_starts", c_uint8),
+        ("tyre_temps", c_uint8),
+        ("pit_lane_tyre_sim", c_uint8),
+        ("car_damage", c_uint8),
+        ("car_damage_rate", c_uint8),
+        ("collisions", c_uint8),
+        ("collisions_first_lap_only", c_uint8),
+        ("multiplayer_unsafe_pit_release", c_uint8),
+        ("multiplayer_kick_for_griefing", c_uint8),
+        ("corner_cutting_stringency", c_uint8),
+        ("parc_ferme", c_uint8),
+        ("pit_stop_experience", c_uint8),
+        ("safety_car", c_uint8),
+        ("safety_car_experience", c_uint8),
+        ("formation_lap", c_uint8),
+        ("formation_lap_experience", c_uint8),
+        ("red_flags", c_uint8),
+        ("affects_licence_level_solo", c_uint8),
+        ("affects_licence_level_multiplayer", c_uint8),
+        ("number_of_sessions_in_weekend", c_uint8),
+        ("weekend_structure", c_uint8 * 12),
+        ("sector_2_start_distance_m", c_float),
+        ("sector_3_start_distance_m", c_float),
+    )
+
+
+class LapData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("last_lap_time_ms", c_uint32),
+        ("current_lap_time_ms", c_uint32),
+        ("sector1_time_ms_component", c_uint16),
+        ("sector1_time_minutes_component", c_uint8),
+        ("sector2_time_ms_component", c_uint16),
+        ("sector2_time_minutes_component", c_uint8),
+        ("delta_to_car_in_front_ms_component", c_uint16),
+        ("delta_to_car_in_front_minutes_component", c_uint8),
+        ("delta_to_leader_ms_component", c_uint16),
+        ("delta_to_leader_minutes_component", c_uint8),
+        ("lap_distance_travelled_m", c_float),
+        ("session_distance_travelled_m", c_float),
+        ("safety_car_delta", c_float),
+        ("car_position", c_uint8),
+        ("current_lap_number", c_uint8),
+        ("pit_status", c_uint8),
+        ("number_of_pit_stops", c_uint8),
+        ("sector", c_uint8),
+        ("current_lap_invalid", c_uint8),
+        ("penalties", c_uint8),
+        ("total_warnings", c_uint8),
+        ("corner_cutting_warnings", c_uint8),
+        ("number_unserved_drive_through_pens", c_uint8),
+        ("number_unserved_stop_go_pens", c_uint8),
+        ("grid_position", c_uint8),
+        ("driver_status", c_uint8),
+        ("result_status", c_uint8),
+        ("pit_lane_timer_active", c_uint8),
+        ("pit_lane_time_ms", c_uint16),
+        ("pit_lane_stop_time_ms", c_uint16),
+        ("pit_stop_must_serve_pen", c_uint8),
+        ("fastest_speed_trap_speed_kph", c_float),
+        ("fastest_speed_trap_lap", c_uint8),
+    )
+
+
+class CarLapData_22(LapData * 22):
     pass
 
 
-class LobbyInfoPacket(BaseModel):
+class LapDataPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("cars", (CarLapData_22)),
+        ("timetrial_pb", c_uint8),
+        ("timetrial_rival_car_index", c_uint8),
+    )
+
+
+class LapHistoryData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("lap_time_ms", c_uint32),
+        ("sector1_time_ms_component", c_uint16),
+        ("sector1_time_minutes_component", c_uint8),
+        ("sector2_time_ms_component", c_uint16),
+        ("sector2_time_minutes_component", c_uint8),
+        ("sector3_time_ms_component", c_uint16),
+        ("sector3_time_minutes_component", c_uint8),
+        ("lap_valid_bit_flags", c_uint8),
+    )
+
+
+class TyreHistoryData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("tyre_replaced_lap", c_uint8),
+        ("tyre_actual_compound", c_uint8),
+        ("tyre_visual_compound", c_uint8),
+    )
+
+
+class LapHistory_100(LapHistoryData * 100):
     pass
 
 
-class SessionHistoryPacket(BaseModel):
+class TyreHistory_8(TyreHistoryData * 8):
     pass
 
 
-class TyreSetsPacket(BaseModel):
+class LapHistoryPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("relevant_car_id", c_uint8),
+        ("number_of_laps_in_data", c_uint8),
+        ("number_of_tyre_stints", c_uint8),
+        ("best_lap_number", c_uint8),
+        ("best_s1_lap_number", c_uint8),
+        ("best_s2_lap_number", c_uint8),
+        ("best_s3_lap_number", c_uint8),
+        ("lap_history_data", (LapHistory_100)),
+        ("tyre_history_data", (TyreHistory_8)),
+    )
+
+
+class CarStatusData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("traction_control", c_uint8),
+        ("anti_lock_brakes", c_uint8),
+        ("fuel_mix", c_uint8),
+        ("front_brake_bias", c_uint8),
+        ("pit_limiter_status", c_uint8),
+        ("current_fuel_in_tank_kg", c_float),
+        ("fuel_capacity", c_float),
+        ("fuel_remaining_laps", c_float),
+        ("max_rpm", c_uint16),
+        ("idle_rpm", c_uint16),
+        ("max_gears", c_uint8),
+        ("drs_allowed", c_uint8),
+        ("drs_activated_in_distance", c_uint16),
+        ("actual_tyre_compound", c_uint8),
+        ("visual_tyre_compound", c_uint8),
+        ("tyre_age_laps", c_uint8),
+        ("vehicle_flags_shown", c_int8),
+        ("engine_power_ice", c_float),
+        ("engine_power_mguk", c_float),
+        ("ers_store_energy", c_float),
+        ("ers_deploy_mode", c_uint8),
+        ("ers_harvested_mguk", c_float),
+        ("ers_harvested_mgu_h", c_float),
+        ("ers_deployed_this_lap", c_float),
+        ("network_paused", c_uint8),
+    )
+
+
+class CarStatus_22(CarStatusData * 22):
     pass
 
 
-class ExtendedMotionPacket(BaseModel):
+class CarStatusPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("header", Header), ("cars", (CarStatus_22)))
+
+
+class CarDamageData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("tyre_wear_percentage", c_float),
+        ("tyre_damage_percentage", c_uint8),
+        ("brakes_damage_percentage", c_uint8),
+        ("tyre_blisters_percentage", c_uint8),
+        ("front_wing_damage_percentage", c_uint8),
+        ("rear_wing_damage_percentage", c_uint8),
+        ("floor_damage_percentage", c_uint8),
+        ("diffuser_damage_percentage", c_uint8),
+        ("sidepod_damage_percentage", c_uint8),
+        ("drs_fault", c_uint8),
+        ("ers_fault", c_uint8),
+        ("gearbox_damage_percentage", c_uint8),
+        ("engine_damage_percentage", c_uint8),
+        ("engine_mguh_wear_percentage", c_uint8),
+        ("engine_es_wear_percentage", c_uint8),
+        ("engine_ce_wear_percentage", c_uint8),
+        ("engine_ice_wear_percentage", c_uint8),
+        ("engine_mguk_wear_percentage", c_uint8),
+        ("engine_tc_wear_percentage", c_uint8),
+        ("engine_blown", c_uint8),
+        ("engine_seized", c_uint8),
+    )
+
+
+class CarDamage_22(CarDamageData * 22):
     pass
 
 
-class TimeTrialPacket(BaseModel):
+class CarDamagePacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("header", Header), ("cars", (CarDamage_22)))
+
+
+class LiveryColours(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("red", c_uint8),
+        ("green", c_uint8),
+        ("blue", c_uint8),
+    )
+
+
+class Livery_4(LiveryColours * 4):
     pass
+
+
+class ParticipantData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("is_ai_controlled_flag", c_uint8),
+        ("driver_id", c_uint8),
+        ("network_id", c_uint8),
+        ("team_id", c_uint8),
+        ("my_team_flag", c_uint8),
+        ("race_number", c_uint8),
+        ("nationality", c_uint8),
+        ("name", (c_char * 32)),
+        ("network_telemetry_flag", c_uint8),
+        ("show_online_names", c_uint8),
+        ("f1_world_tech_level", c_uint16),
+        ("platform", c_uint8),
+        ("number_of_colours", c_uint8),
+        ("livery_colours", (Livery_4)),
+    )
+
+
+class Participant_22(ParticipantData * 22):
+    pass
+
+
+class ParticipantsPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("number_of_active_cars", c_int8),
+        ("participant_data", (Participant_22)),
+    )
+
+
+class FastestLapData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("fastest_lap_car_id", c_uint8),
+        ("fastest_lap_seconds", c_float),
+    )
+
+
+class CarRetirementData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("retired_car_id", c_uint8), ("retirement_reason", c_uint8))
+
+
+class DrsDisabledData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("drs_disabled_reason", c_uint8)]
+
+
+class TeammateInPitData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("car_index_of_teammate", c_uint8)]
+
+
+class RaceWinnerData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("car_index_of_winner", c_uint8)]
+
+
+class PenaltyData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("penalty_type", c_uint8),
+        ("infringement_type", c_uint8),
+        ("car_id_of_criminal", c_uint8),
+        ("car_id_of_victim", c_uint8),
+        ("time_gained", c_uint8),
+        ("lap_number_of_offence", c_uint8),
+        ("places_gained", c_uint8),
+    )
+
+
+class SpeedTrapData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("car_id", c_uint8),
+        ("speed_kph", c_float),
+        ("is_overall_fastest_in_session", c_uint8),
+        ("is_fastest_for_driver_session", c_uint8),
+        ("car_id_of_fastest_in_session", c_uint8),
+        ("fastest_speed_in_session_kph", c_float),
+    )
+
+
+class StartLightsData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("number_of_lights_lit", c_uint8)]
+
+
+class DriveThroughPenaltyData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("car_id_of_serving_car", c_uint8)]
+
+
+class StopGoPenaltyServedData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("car_id_of_serving_car", c_uint8)]
+
+
+class FlashbackData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("flashback_frame_id", c_uint32),
+        ("flashback_to_time", c_float),
+    )
+
+
+class ButtonPressedData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = [("button_pressed", c_uint32)]
+
+
+class OvertakeData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("overtaking_car_id", c_uint8), ("overtook_car_id", c_uint8))
+
+
+class CollisionData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("first_car_id", c_uint8), ("second_car_id", c_uint8))
+
+
+class SafetycarData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (("safety_car_type", c_uint8), ("safety_car_status", c_uint8))
+
+
+class EventDetails(Union):
+    # since each of the events is optional and must be handled only when its sent
+    _fields_: ClassVar = (
+        ("fastest_lap", FastestLapData),
+        ("retirement", CarRetirementData),
+        ("teammate_in_pits", TeammateInPitData),
+        ("race_winner", RaceWinnerData),
+        ("penalty_type", PenaltyData),
+        ("speedtrap", SpeedTrapData),
+        ("start_lights", StartLightsData),
+        ("drive_through_penalty_served", DriveThroughPenaltyData),
+        ("stop_go_penalty_served", StopGoPenaltyServedData),
+        ("flashback_info", FlashbackData),
+        ("button_pressed", ButtonPressedData),
+    )
+
+
+class EventPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("event_code_string", (c_char * 4)),
+        ("event_details", EventDetails),
+    )
+
+
+class CarSetupPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class CarTelemetryData:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class FinalClassificationPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class LobbyInfoPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class SessionHistoryPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class TyreSetsPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class ExtendedMotionPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
+
+
+class TimeTrialPacket:
+    pass
+    # TODO
+    # non-relevant to what I want
