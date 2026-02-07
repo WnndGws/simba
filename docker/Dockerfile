@@ -36,5 +36,5 @@ ENV PATH="$APP_DIR/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["python", "src/utils/udp_filter.py"]
+CMD ["python", "src/utils/create_dataclasses.py"]
 
