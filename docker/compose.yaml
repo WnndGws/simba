@@ -5,6 +5,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile
     volumes: ['../:/home/simba/simba']
+    network_mode: host
+    ports: ['20127:20127']
     develop:
       watch:
         # Rebuild the image if dependencies change by checking uv.lock
