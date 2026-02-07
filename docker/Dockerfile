@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ENV APP_DIR=/home/$USER/src
+ENV APP_DIR=/home/$USER
 
 WORKDIR $APP_DIR
 
