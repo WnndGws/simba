@@ -37,3 +37,4 @@ ENV PATH="$APP_DIR/.venv/bin:$PATH"
 ENTRYPOINT []
 
 # CMD ["python", "src/utils/create_dataclasses.py"]
+CMD ["trap : TERM INT; sleep infinity & wait"]
