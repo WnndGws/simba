@@ -1,0 +1,7 @@
+services:
+  simba:
+    container_name: simba
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    volumes: ['../:/home/simba/simba']
