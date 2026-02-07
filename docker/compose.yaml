@@ -5,3 +5,8 @@ services:
       context: ../
       dockerfile: docker/Dockerfile
     volumes: ['../:/home/simba/simba']
+    develop:
+      watch:
+        # Rebuild the image if dependencies change by checking uv.lock
+        - action: rebuild
+          path: ./uv.lock
