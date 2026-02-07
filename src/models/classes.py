@@ -18,7 +18,81 @@ from ctypes import (
     c_uint32,
     c_uint64,
 )
+from dataclasses import dataclass
 from typing import ClassVar
+
+
+@dataclass
+class SessionInfo:
+    session_type: str = "N/A"
+    track: str = "N/A"
+    track_temp: int = 255
+    air_temp: int = 255
+    weather: str = "N/A"
+    track_length_m: int = 255
+    total_race_laps: int = 255
+    session_duration_s: int = 255
+    session_time_remaining_s: int = 255
+    difficulty: int = 255
+    parc_ferme: str = "N/A"
+    fastest_lap_driver: str = "N/A"
+    fastest_lap_time: str = "N/A"
+    leader: str = "N/A"
+
+
+@dataclass
+class PlayerInfo:
+    current_lap_number: int = 255
+    current_lap_ms: int = 255
+    last_lap_ms: int = 255
+    fastest_lap_ms: int = 255
+    s1_ms: int = 255
+    fastest_s1_ms: int = 255
+    s2_ms: int = 255
+    fastest_s2_ms: int = 255
+    fastest_s3_ms: int = 255
+    driver_in_front: str = "N/A"
+    driver_behind: str = "N/A"
+    delta_to_car_in_front: int = 255
+    delta_to_leader: int = 255
+    delta_to_other_player: int = 255
+    delta_to_car_behind: int = 255
+    position: int = 255
+    penalties: int = 255
+    total_warnings: int = 255
+    corner_warnings: int = 255
+    grid_position: int = 255
+    driver_status: int = 255
+    pit_status: int = 255
+    pitstops: int = 255
+    ideal_pitstop_lap: int = 255
+    latest_recommended_pitstop: int = 255
+    predicted_rejoin_position: int = 255
+    fuel_remaining_laps: int = 255
+    visual_tyre_compound: str = "N/A"
+    tyre_age_laps: int = 255
+    tyre_blister_percentage: int = 255
+    tyre_wear_percentage: int = 255
+    tyre_damage_percentage: int = 255
+    brakes_damage_percentage: int = 255
+    tyre_blisters_percentage: int = 255
+    front_wing_damage_percentage: int = 255
+    rear_wing_damage_percentage: int = 255
+    floor_damage_percentage: int = 255
+    diffuser_damage_percentage: int = 255
+    sidepod_damage_percentage: int = 255
+    drs_fault: int = 255
+    ers_fault: int = 255
+    gearbox_damage_percentage: int = 255
+    engine_damage_percentage: int = 255
+    engine_mguh_wear_percentage: int = 255
+    engine_es_wear_percentage: int = 255
+    engine_ce_wear_percentage: int = 255
+    engine_ice_wear_percentage: int = 255
+    engine_mguk_wear_percentage: int = 255
+    engine_tc_wear_percentage: int = 255
+    engine_blown: int = 255
+    engine_seized: int = 255
 
 
 class Header(LittleEndianStructure):

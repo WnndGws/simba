@@ -25,7 +25,7 @@ logger.configure(
             "sink": RichHandler(
                 rich_tracebacks=True, show_path=True, tracebacks_show_locals=True
             ),
-            "level": "INFO",
+            "level": "CRITICAL",
         }
     ]
 )
@@ -82,7 +82,7 @@ def decode_packets(packet):
     logger.debug(f"Received header packet_id of: {packet_id}")
 
     if packet_id not in constants.PACKET_CLASS_DICT:
-        logger.warning(f"Cant handle packet_id of: {packet_id}")
+        logger.debug(f"Cant handle packet_id of: {packet_id}")
         return {}
 
     packet_class = constants.PACKET_CLASS_DICT[packet_id]

@@ -21,7 +21,7 @@ logger.configure(
             "sink": RichHandler(
                 rich_tracebacks=True, show_path=True, tracebacks_show_locals=True
             ),
-            "level": "INFO",
+            "level": "CRITICAL",
         }
     ]
 )
