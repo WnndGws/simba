@@ -106,8 +106,8 @@ def udp_to_class_info(
         except KeyboardInterrupt:
             stop_event.set()
         except multiprocessing.queues.Empty:
-            logger.critical("Queue Empty")
-            time.sleep(1)
+            time.sleep(0.2)
+            return
 
 
 if __name__ == "__main__":
