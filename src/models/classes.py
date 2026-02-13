@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ## UDP data structures as laid out in EA documentation
 ## Generally use XxxxData for individual data
 ## Generally use XxxxPacket for collections of XxxxData
@@ -10,6 +9,7 @@ from ctypes import (
     LittleEndianStructure,
     Union,
     c_char,
+    c_double,
     c_float,
     c_int8,
     c_int16,
@@ -18,81 +18,7 @@ from ctypes import (
     c_uint32,
     c_uint64,
 )
-from dataclasses import dataclass
 from typing import ClassVar
-
-
-@dataclass
-class SessionInfo:
-    session_type: str = "N/A"
-    track: str = "N/A"
-    track_temp: int = 255
-    air_temp: int = 255
-    weather: str = "N/A"
-    track_length_m: int = 255
-    total_race_laps: int = 255
-    session_duration_s: int = 255
-    session_time_remaining_s: int = 255
-    difficulty: int = 255
-    parc_ferme: str = "N/A"
-    fastest_lap_driver: str = "N/A"
-    fastest_lap_time: str = "N/A"
-    leader: str = "N/A"
-
-
-@dataclass
-class PlayerInfo:
-    current_lap_number: int = 255
-    current_lap_ms: int = 255
-    last_lap_ms: int = 255
-    fastest_lap_ms: int = 255
-    s1_ms: int = 255
-    fastest_s1_ms: int = 255
-    s2_ms: int = 255
-    fastest_s2_ms: int = 255
-    fastest_s3_ms: int = 255
-    driver_in_front: str = "N/A"
-    driver_behind: str = "N/A"
-    delta_to_car_in_front: int = 255
-    delta_to_leader: int = 255
-    delta_to_other_player: int = 255
-    delta_to_car_behind: int = 255
-    position: int = 255
-    penalties: int = 255
-    total_warnings: int = 255
-    corner_warnings: int = 255
-    grid_position: int = 255
-    driver_status: int = 255
-    pit_status: int = 255
-    pitstops: int = 255
-    ideal_pitstop_lap: int = 255
-    latest_recommended_pitstop: int = 255
-    predicted_rejoin_position: int = 255
-    fuel_remaining_laps: int = 255
-    visual_tyre_compound: str = "N/A"
-    tyre_age_laps: int = 255
-    tyre_blister_percentage: int = 255
-    tyre_wear_percentage: int = 255
-    tyre_damage_percentage: int = 255
-    brakes_damage_percentage: int = 255
-    tyre_blisters_percentage: int = 255
-    front_wing_damage_percentage: int = 255
-    rear_wing_damage_percentage: int = 255
-    floor_damage_percentage: int = 255
-    diffuser_damage_percentage: int = 255
-    sidepod_damage_percentage: int = 255
-    drs_fault: int = 255
-    ers_fault: int = 255
-    gearbox_damage_percentage: int = 255
-    engine_damage_percentage: int = 255
-    engine_mguh_wear_percentage: int = 255
-    engine_es_wear_percentage: int = 255
-    engine_ce_wear_percentage: int = 255
-    engine_ice_wear_percentage: int = 255
-    engine_mguk_wear_percentage: int = 255
-    engine_tc_wear_percentage: int = 255
-    engine_blown: int = 255
-    engine_seized: int = 255
 
 
 class Header(LittleEndianStructure):
@@ -148,7 +74,7 @@ class MarshalZone(LittleEndianStructure):
     )
 
 
-class WeatherForcast(LittleEndianStructure):
+class WeatherForecast(LittleEndianStructure):
     _pack_: ClassVar = 1
     _fields_: ClassVar = (
         ("session_type", c_uint8),
@@ -166,7 +92,7 @@ class MarshalZone_21(MarshalZone * 21):
     pass
 
 
-class WeatherForcast_64(WeatherForcast * 64):
+class WeatherForecast_64(WeatherForecast * 64):
     pass
 
 
@@ -193,8 +119,8 @@ class SessionData(LittleEndianStructure):
         ("list_of_marshal_zones", (MarshalZone_21)),
         ("safety_car_status", c_uint8),
         ("network_game", c_uint8),
-        ("number_of_weather_forcast_samples", c_uint8),
-        ("weather_forcasts", (WeatherForcast_64)),
+        ("number_of_weather_forecast_samples", c_uint8),
+        ("weather_forecasts", (WeatherForecast_64)),
         ("weather_forecast_accuracy", c_uint8),
         ("ai_difficulty_level", c_uint8),
         ("season_link_id", c_uint32),
@@ -307,7 +233,7 @@ class LapDataPacket(LittleEndianStructure):
     )
 
 
-class LapHistoryData(LittleEndianStructure):
+class LapHistoryPacket(LittleEndianStructure):
     _pack_: ClassVar = 1
     _fields_: ClassVar = (
         ("lap_time_ms", c_uint32),
@@ -330,7 +256,7 @@ class TyreHistoryData(LittleEndianStructure):
     )
 
 
-class LapHistory_100(LapHistoryData * 100):
+class LapHistory_100(LapHistoryPacket * 100):
     pass
 
 
@@ -338,7 +264,7 @@ class TyreHistory_8(TyreHistoryData * 8):
     pass
 
 
-class LapHistoryPacket(LittleEndianStructure):
+class SessionHistoryPacket(LittleEndianStructure):
     _pack_: ClassVar = 1
     _fields_: ClassVar = (
         ("header", Header),
@@ -586,6 +512,9 @@ class EventDetails(Union):
         ("stop_go_penalty_served", StopGoPenaltyServedData),
         ("flashback_info", FlashbackData),
         ("button_pressed", ButtonPressedData),
+        ("overtake_data", OvertakeData),
+        ("collision_data", CollisionData),
+        ("safety_car_data", SafetycarData),
     )
 
 
@@ -598,49 +527,235 @@ class EventPacket(LittleEndianStructure):
     )
 
 
-class CarSetupPacket:
+class CarSetupData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("front_wing", c_uint8),
+        ("rear_wing", c_uint8),
+        ("on_throttle", c_uint8),
+        ("off_throttle", c_uint8),
+        ("front_camber", c_float),
+        ("rear_camber", c_float),
+        ("front_toe", c_float),
+        ("rear_toe", c_float),
+        ("front_suspension", c_uint8),
+        ("rear_suspension", c_uint8),
+        ("front_anti_roll_bar", c_uint8),
+        ("rear_anti_roll_bar", c_uint8),
+        ("front_suspension_height", c_uint8),
+        ("rear_suspension_height", c_uint8),
+        ("brake_pressure", c_uint8),
+        ("brake_bias", c_uint8),
+        ("engine_braking", c_uint8),
+        ("rear_left_tyre_pressure", c_float),
+        ("rear_right_tyre_pressure", c_float),
+        ("front_left_tyre_pressure", c_float),
+        ("front_right_tyre_pressure", c_float),
+        ("ballast", c_uint8),
+        ("fuel_load", c_float),
+    )
+
+
+class CarSetup_22(CarSetupData * 22):
     pass
-    # TODO
-    # non-relevant to what I want
 
 
-class CarTelemetryData:
+class CarSetupPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("car_setups", (CarSetup_22)),
+        ("next_front_wing_value", c_float),
+    )
+
+
+class CarTelemetryData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("speed", c_uint16),
+        ("throttle", c_float),
+        ("steer", c_float),
+        ("brake", c_float),
+        ("clutch", c_uint8),
+        ("gear", c_int8),
+        ("engine_rpm", c_uint16),
+        ("drs", c_uint8),
+        ("rev_lights_percent", c_uint8),
+        ("rev_lights_bit_value", c_uint16),
+        ("brakes_temperature", c_uint16 * 4),
+        ("tyres_surface_temperature", c_uint8 * 4),
+        ("tyres_inner_temperature", c_uint8 * 4),
+        ("engine_temperature", c_uint16),
+        ("tyres_pressure", c_float * 4),
+        ("surface_type", c_uint8 * 4),
+    )
+
+
+class CarTelemetry_22(CarTelemetryData * 22):
     pass
-    # TODO
-    # non-relevant to what I want
 
 
-class FinalClassificationPacket:
+class CarTelemetryPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("car_telemetry_data", (CarTelemetry_22)),
+        ("mfd_panel_index", c_uint8),
+        ("mfd_panel_index_secondary_player", c_uint8),
+        ("suggested_gear", c_int8),
+    )
+
+
+class FinalClassificationData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("position", c_uint8),
+        ("num_laps", c_uint8),
+        ("grid_position", c_uint8),
+        ("points", c_uint8),
+        ("num_pit_stops", c_uint8),
+        ("result_status", c_uint8),
+        ("result_reason", c_uint8),
+        ("best_lap_time_in_ms", c_uint32),
+        ("total_race_time", c_double),
+        ("penalties_time", c_uint8),
+        ("num_penalties", c_uint8),
+        ("num_tyre_stints", c_uint8),
+        ("tyre_stints_actual", c_uint8 * 8),
+        ("tyre_stints_visual", c_uint8 * 8),
+        ("tyre_stints_end_laps", c_uint8 * 8),
+    )
+
+
+class FinalClassification_22(FinalClassificationData * 22):
     pass
-    # TODO
-    # non-relevant to what I want
 
 
-class LobbyInfoPacket:
+class FinalClassificationPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("num_cars", c_uint8),
+        ("classification_data", (FinalClassification_22)),
+    )
+
+
+class LobbyInfoData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("ai_controlled", c_uint8),
+        ("team_id", c_uint8),
+        ("nationality", c_uint8),
+        ("platform", c_uint8),
+        ("name", (c_char * 48)),
+        ("car_number", c_uint8),
+        ("your_telemetry", c_uint8),
+        ("show_online_names", c_uint8),
+        ("f1_world_tech_level", c_uint16),
+        ("ready_status", c_uint8),
+    )
+
+
+class LobbyInfo_22(LobbyInfoData * 22):
     pass
-    # TODO
-    # non-relevant to what I want
 
 
-class SessionHistoryPacket:
+class LobbyInfoPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("num_players", c_uint8),
+        ("lobby_players", (LobbyInfo_22)),
+    )
+
+
+class TyreSetData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("actual_tyre_compound", c_uint8),
+        ("visual_tyre_compound", c_uint8),
+        ("wear", c_uint8),
+        ("available", c_uint8),
+        ("recommended_session", c_uint8),
+        ("life_span", c_uint8),
+        ("usable_life", c_uint8),
+        ("lap_delta_time", c_int16),
+        ("fitted", c_uint8),
+    )
+
+
+class TyreSet_20(TyreSetData * 20):
     pass
-    # TODO
-    # non-relevant to what I want
 
 
-class TyreSetsPacket:
-    pass
-    # TODO
-    # non-relevant to what I want
+class TyreSetsPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("car_idx", c_uint8),
+        ("tyre_set_data", (TyreSet_20)),
+        ("fitted_idx", c_uint8),
+    )
 
 
-class ExtendedMotionPacket:
-    pass
-    # TODO
-    # non-relevant to what I want
+class ExtendedMotionPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("suspension_position", c_float * 4),
+        ("suspension_velocity", c_float * 4),
+        ("suspension_acceleration", c_float * 4),
+        ("wheel_speed", c_float * 4),
+        ("wheel_slip_ratio", c_float * 4),
+        ("wheel_slip_angle", c_float * 4),
+        ("wheel_lat_force", c_float * 4),
+        ("wheel_long_force", c_float * 4),
+        ("height_of_cog_above_ground", c_float),
+        ("local_velocity_x", c_float),
+        ("local_velocity_y", c_float),
+        ("local_velocity_z", c_float),
+        ("angular_velocity_x", c_float),
+        ("angular_velocity_y", c_float),
+        ("angular_velocity_z", c_float),
+        ("angular_acceleration_x", c_float),
+        ("angular_acceleration_y", c_float),
+        ("angular_acceleration_z", c_float),
+        ("front_wheels_angle", c_float),
+        ("wheel_vert_force", c_float * 4),
+        ("front_aero_height", c_float),
+        ("rear_aero_height", c_float),
+        ("front_roll_angle", c_float),
+        ("rear_roll_angle", c_float),
+        ("chassis_yaw", c_float),
+        ("chassis_pitch", c_float),
+        ("wheel_camber", c_float * 4),
+        ("wheel_camber_gain", c_float * 4),
+    )
 
 
-class TimeTrialPacket:
-    pass
-    # TODO
-    # non-relevant to what I want
+class TimeTrialData(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("car_idx", c_uint8),
+        ("team_id", c_uint8),
+        ("lap_time_in_ms", c_uint32),
+        ("sector1_time_in_ms", c_uint32),
+        ("sector2_time_in_ms", c_uint32),
+        ("sector3_time_in_ms", c_uint32),
+        ("traction_control", c_uint8),
+        ("gearbox_assist", c_uint8),
+        ("anti_lock_brakes", c_uint8),
+        ("equal_car_performance", c_uint8),
+        ("custom_setup", c_uint8),
+        ("valid", c_uint8),
+    )
+
+
+class TimeTrialPacket(LittleEndianStructure):
+    _pack_: ClassVar = 1
+    _fields_: ClassVar = (
+        ("header", Header),
+        ("player_session_best_data_set", TimeTrialData),
+        ("personal_best_data_set", TimeTrialData),
+        ("rival_data_set", TimeTrialData),
+    )

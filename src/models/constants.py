@@ -3,6 +3,8 @@
 
 from typing import Final
 
+import rich
+
 from models import classes
 
 PACKET_HEADER_LENGTH: Final[int] = 29  # <HBBBBBQfLLBB
@@ -23,6 +25,7 @@ NULL_BYTE_VALUE: Final[int] = 255  # as per documentation
 
 NAME_SIZE: Final[int] = 48  # max driver name len
 
+
 # Where they don't have a class, its because I skipped them in the classes file
 # This allows me to use it as a crude lookup-table to recursively decode them
 PACKET_CLASS_DICT: Final[dict[int:type]] = {
@@ -31,13 +34,17 @@ PACKET_CLASS_DICT: Final[dict[int:type]] = {
     2: classes.LapDataPacket,
     3: classes.EventPacket,
     4: classes.ParticipantsPacket,
-    # 5: classes.CarSetupPacket,
-    # 6: classes.CarTelemetryData,
+    5: classes.CarSetupPacket,
+    6: classes.CarTelemetryPacket,
     7: classes.CarStatusPacket,
     # 8: classes.FinalClassificationPacket,
     # 9: classes.LobbyInfoPacket,
     10: classes.CarDamagePacket,
-    # 11: classes.SessionHistoryPacket,
+    11: classes.SessionHistoryPacket,
+    12: classes.TyreSetsPacket,
+    # 13: classes.ExtendedMotionPacket
+    # 14: classes.TimeTrialPacket
+    # 15: classes.LapPositionsPacket
 }
 
 EVENT_DICT: Final[dict[str:type]] = {
@@ -60,7 +67,7 @@ EVENT_DICT: Final[dict[str:type]] = {
     "BUTN": classes.ButtonPressedData,
 }
 
-FORMALA_CLASSIFICATION_DICT: Final[dict[int:str]] = {
+FORMULA_CLASSIFICATION_DICT: Final[dict[int:str]] = {
     0: "Modern F1",
     1: "Classic F1",
     2: "F2",
@@ -727,3 +734,87 @@ INFRINGEMENT_TYPE_DICT: Final[dict[int, str]] = {
     53: "Mandatory pitstop",
     54: "Attribute assigned",
 }
+
+
+def display_data(key, value):
+    match key:
+        case "weather":
+            return "Weather", WEATHER_TYPE_DICT[value]
+        # "world_forward_direction_x": {"name": "", "value": ""},
+        # "world_forward_direction_y": {"name": "", "value": ""},
+        # "world_forward_direction_z": {"name": "", "value": ""},
+        # "world_right_direction_x": {"name": "", "value": ""},
+        # "world_right_direction_y": {"name": "", "value": ""},
+        # "world_right_direction_z": {"name": "", "value": ""},
+        case "track_temp_c":
+            return "Track Temp", f"{value} degC"
+        case "air_temp_c":
+            return "Air Temp", f"{value} degC"
+        case "total_race_laps":
+            return "Race Length", f"{value} laps"
+        # "track_length_m": {"name": "", "value": ""},
+        case "session_type":
+            return "Session", SESSION_TYPE_DICT[value]
+        case "track_id":
+            return "Track", TRACK_DICT[value]
+        # "formula": {"name": "", "value": ""},
+        case "session_time_remaining_seconds":
+            return "Time Remaining", str(value)
+        # "session_duration_seconds": {"name": "", "value": ""},
+        # "pit_speed_limit_kph": {"name": "", "value": ""},
+        # "game_paused": {"name": "", "value": ""},
+        case "safety_car_status":
+            return "Safety Car", SAFETY_CAR_STATUS_DICT[value]
+        # "ai_difficulty_level": {"name": "", "value": ""},
+        # "pit_stop_ideal_lap": {"name": "", "value": ""},
+        # "pit_stop_latest_lap": {"name": "", "value": ""},
+        # "pit_stop_rejoin_position": {"name": "", "value": ""},
+        # "steering_assist": {"name": "", "value": ""},
+        # "braking_assist": {"name": "", "value": ""},
+        # "gearbox_assist": {"name": "", "value": ""},
+        # "pit_assist": {"name": "", "value": ""},
+        # "pit_release_assist": {"name": "", "value": ""},
+        # "ers_assist": {"name": "", "value": ""},
+        # "drs_assist": {"name": "", "value": ""},
+        # "dynamic_racing_line": {"name": "", "value": ""},
+        # "dynamic_racing_line_type": {"name": "", "value": ""},
+        # "game_mode": {"name": "", "value": ""},
+        # "ruleset": {"name": "", "value": ""},
+        # "time_of_day": {"name": "", "value": ""},
+        # "session_length": {"name": "", "value": ""},
+        # "speed_units_player1": {"name": "", "value": ""},
+        # "temp_units_player1": {"name": "", "value": ""},
+        # "speed_units_player2": {"name": "", "value": ""},
+        # "temp_units_player2": {"name": "", "value": ""},
+        # "number_of_safetycar_incidents": {"name": "", "value": ""},
+        # "number_of_virtualsafetycar_incidents": {"name": "", "value": ""},
+        # "number_of_red_flags": {"name": "", "value": ""},
+        # "equal_car_performance": {"name": "", "value": ""},
+        # "recovery_mode": {"name": "", "value": ""},
+        # "flashback_limit": {"name": "", "value": ""},
+        # "surface_type": {"name": "", "value": ""},
+        # "low_fuel_mode": {"name": "", "value": ""},
+        # "race_starts": {"name": "", "value": ""},
+        # "tyre_temps": {"name": "", "value": ""},
+        # "pit_lane_tyre_sim": {"name": "", "value": ""},
+        # "car_damage": {"name": "", "value": ""},
+        # "car_damage_rate": {"name": "", "value": ""},
+        # "collisions": {"name": "", "value": ""},
+        # "collisions_first_lap_only": {"name": "", "value": ""},
+        # "multiplayer_unsafe_pit_release": {"name": "", "value": ""},
+        # "multiplayer_kick_for_griefing": {"name": "", "value": ""},
+        # "corner_cutting_stringency": {"name": "", "value": ""},
+        # "parc_ferme": {"name": "", "value": ""},
+        # "pit_stop_experience": {"name": "", "value": ""},
+        # "safety_car": {"name": "Safety Car", "value": SAFETY_CAR_STATUS_DICT[value]},
+        # "safety_car_experience": {"name": "", "value": ""},
+        # "formation_lap": {"name": "", "value": ""},
+        # "formation_lap_experience": {"name": "", "value": ""},
+        # "red_flags": {"name": "", "value": ""},
+        # "sector_2_start_distance_m": {"name": "", "value": ""},
+        # "sector_3_start_distance_m": {"name": "", "value": ""},
+        # "safety_car_data": {"name": "", "value": ""},
+        case "drs_status":
+            return "DRS", str(value)
+        # "session_top_speedtrap": {"name": "", "value": ""},
+        # "session_top_speedtrap_driver": {"name": "", "value": ""},
