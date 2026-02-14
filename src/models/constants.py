@@ -735,86 +735,438 @@ INFRINGEMENT_TYPE_DICT: Final[dict[int, str]] = {
     54: "Attribute assigned",
 }
 
+DATA_TO_HEADER_DICT = {
+    "actual_tyre_compound": 12,  # TyreSetsPacket
+    "ai_difficulty_level": 1,  # SessionData
+    "air_temp_c": 1,  # SessionData
+    "anti_lock_brakes": 5,  # CarSetupPacket
+    "available": 12,  # TyreSetsPacket
+    "ballast": 5,  # CarSetupPacket
+    "best_lap_number": 11,  # SessionHistoryPacket
+    "best_s1_lap_number": 11,  # SessionHistoryPacket
+    "best_s2_lap_number": 11,  # SessionHistoryPacket
+    "best_s3_lap_number": 11,  # SessionHistoryPacket
+    "brake": 6,  # CarTelemetryPacket
+    "brake_bias": 5,  # CarSetupPacket
+    "brake_pressure": 5,  # CarSetupPacket
+    "brakes_damage_percentage": 10,  # CarDamagePacket
+    "brakes_temperature": 6,  # CarTelemetryPacket
+    "braking_assist": 1,  # SessionData
+    "car_damage": 1,  # SessionData
+    "car_damage_rate": 1,  # SessionData
+    "car_id_of_criminal": 3,  # EventPacket (PenaltyData)
+    "car_id_of_victim": 3,  # EventPacket (PenaltyData)
+    "car_position": 2,  # LapDataPacket
+    "clutch": 6,  # CarTelemetryPacket
+    "collisions": 1,  # SessionData
+    "collisions_first_lap_only": 1,  # SessionData
+    "corner_cutting_stringency": 1,  # SessionData
+    "corner_cutting_warnings": 2,  # LapDataPacket
+    "current_fuel_in_tank_kg": 7,  # CarStatusPacket
+    "current_lap_invalid": 2,  # LapDataPacket
+    "current_lap_number": 2,  # LapDataPacket
+    "current_lap_time_ms": 2,  # LapDataPacket
+    "current_tyre_index": 12,  # TyreSetsPacket
+    "delta_to_car_in_front_minutes_component": 2,  # LapDataPacket
+    "delta_to_car_in_front_ms_component": 2,  # LapDataPacket
+    "delta_to_leader_minutes_component": 2,  # LapDataPacket
+    "delta_to_leader_ms_component": 2,  # LapDataPacket
+    "delta_to_car_behind_ms": 2,  # LapDataPacket
+    "diffuser_damage_percentage": 10,  # CarDamagePacket
+    "driver_id": 4,  # ParticipantsPacket
+    "driver_status": 2,  # LapDataPacket
+    "drs": 6,  # CarTelemetryPacket
+    "drs_activated_in_distance": 7,  # CarStatusPacket
+    "drs_allowed": 7,  # CarStatusPacket
+    "drs_assist": 1,  # SessionData
+    "drs_fault": 10,  # CarDamagePacket
+    "drs_status": 1,  # SessionData
+    "dynamic_racing_line": 1,  # SessionData
+    "dynamic_racing_line_type": 1,  # SessionData
+    "engine_blown": 10,  # CarDamagePacket
+    "engine_braking": 5,  # CarSetupPacket
+    "engine_ce_wear_percentage": 10,  # CarDamagePacket
+    "engine_damage_percentage": 10,  # CarDamagePacket
+    "engine_es_wear_percentage": 10,  # CarDamagePacket
+    "engine_ice_wear_percentage": 10,  # CarDamagePacket
+    "engine_mguh_wear_percentage": 10,  # CarDamagePacket
+    "engine_mguk_wear_percentage": 10,  # CarDamagePacket
+    "engine_power_ice": 7,  # CarStatusPacket
+    "engine_power_mguk": 7,  # CarStatusPacket
+    "engine_rpm": 6,  # CarTelemetryPacket
+    "engine_seized": 10,  # CarDamagePacket
+    "engine_tc_wear_percentage": 10,  # CarDamagePacket
+    "engine_temperature": 6,  # CarTelemetryPacket
+    "equal_car_performance": 1,  # SessionData
+    "ers_assist": 1,  # SessionData
+    "ers_deploy_mode": 7,  # CarStatusPacket
+    "ers_fault": 10,  # CarDamagePacket
+    "ers_harvested_mgu_h": 7,  # CarStatusPacket
+    "ers_harvested_mguk": 7,  # CarStatusPacket
+    "ers_store_energy": 7,  # CarStatusPacket
+    "fastest_lap_flag": 3,  # EventPacket (FastestLapData)
+    "fastest_lap_time": 11,  # SessionHistoryPacket
+    "fastest_speed_trap_lap": 2,  # LapDataPacket
+    "fastest_speed_trap_speed_kph": 2,  # LapDataPacket
+    "flashback_limit": 1,  # SessionData
+    "floor_damage_percentage": 10,  # CarDamagePacket
+    "formation_lap": 1,  # SessionData
+    "formation_lap_experience": 1,  # SessionData
+    "formula": 1,  # SessionData
+    "frame_id": 0,  # Header (in all packets)
+    "front_anti_roll_bar": 5,  # CarSetupPacket
+    "front_brake_bias": 7,  # CarStatusPacket
+    "front_camber": 5,  # CarSetupPacket
+    "front_left_tyre_pressure": 5,  # CarSetupPacket
+    "front_right_tyre_pressure": 5,  # CarSetupPacket
+    "front_suspension": 5,  # CarSetupPacket
+    "front_suspension_height": 5,  # CarSetupPacket
+    "front_toe": 5,  # CarSetupPacket
+    "front_wing": 5,  # CarSetupPacket
+    "front_wing_damage_percentage": 10,  # CarDamagePacket
+    "fuel_capacity": 7,  # CarStatusPacket
+    "fuel_load": 5,  # CarSetupPacket
+    "fuel_mix": 7,  # CarStatusPacket
+    "fuel_remaining_laps": 7,  # CarStatusPacket
+    "g_force_lateral": 0,  # Motion
+    "g_force_longitudinal": 0,  # Motion
+    "g_force_vertical": 0,  # Motion
+    "game_major_version": 0,  # Header (in all packets)
+    "game_minor_version": 0,  # Header (in all packets)
+    "game_mode": 1,  # SessionData
+    "game_paused": 1,  # SessionData
+    "game_year": 0,  # Header (in all packets)
+    "gear": 6,  # CarTelemetryPacket
+    "gearbox_assist": 1,  # SessionData
+    "gearbox_damage_percentage": 10,  # CarDamagePacket
+    "grid_position": 2,  # LapDataPacket
+    "idle_rpm": 7,  # CarStatusPacket
+    "infringement_type": 3,  # EventPacket (PenaltyData)
+    "is_ai_controlled_flag": 4,  # ParticipantsPacket
+    "is_fastest_speedtrap_flag": 2,  # LapDataPacket
+    "is_spectating": 1,  # SessionData
+    "lap_delta_time": 12,  # TyreSetsPacket
+    "lap_distance_travelled_m": 2,  # LapDataPacket
+    "lap_number_of_offence": 3,  # EventPacket (PenaltyData)
+    "lap_time_ms": 11,  # SessionHistoryPacket
+    "lap_valid_bit_flags": 11,  # SessionHistoryPacket
+    "last_lap_time_ms": 2,  # LapDataPacket
+    "life_span": 12,  # TyreSetsPacket
+    "livery_blue": 4,  # ParticipantsPacket
+    "livery_green": 4,  # ParticipantsPacket
+    "livery_red": 4,  # ParticipantsPacket
+    "low_fuel_mode": 1,  # SessionData
+    "marshal_zones": 1,  # SessionData
+    "max_gears": 7,  # CarStatusPacket
+    "max_rpm": 7,  # CarStatusPacket
+    "multiplayer_kick_for_griefing": 1,  # SessionData
+    "multiplayer_unsafe_pit_release": 1,  # SessionData
+    "my_team_flag": 4,  # ParticipantsPacket
+    "name": 4,  # ParticipantsPacket
+    "nationality": 4,  # ParticipantsPacket
+    "network_game": 1,  # SessionData
+    "network_id": 4,  # ParticipantsPacket
+    "number_of_laps_in_data": 11,  # SessionHistoryPacket
+    "number_of_pit_stops": 2,  # LapDataPacket
+    "number_of_red_flags": 1,  # SessionData
+    "number_of_safetycar_incidents": 1,  # SessionData
+    "number_of_tyre_stints": 11,  # SessionHistoryPacket
+    "number_of_virtualsafetycar_incidents": 1,  # SessionData
+    "number_unserved_drive_through_pens": 2,  # LapDataPacket
+    "number_unserved_stop_go_pens": 2,  # LapDataPacket
+    "off_throttle": 5,  # CarSetupPacket
+    "on_throttle": 5,  # CarSetupPacket
+    "overall_frame": 0,  # Header (in all packets)
+    "packet_format": 0,  # Header (in all packets)
+    "packet_id": 0,  # Header (in all packets)
+    "packet_version": 0,  # Header (in all packets)
+    "parc_ferme": 1,  # SessionData
+    "penalties": 2,  # LapDataPacket
+    "penalty_type": 3,  # EventPacket (PenaltyData)
+    "pit_assist": 1,  # SessionData
+    "pit_lane_stop_time_ms": 2,  # LapDataPacket
+    "pit_lane_time_ms": 2,  # LapDataPacket
+    "pit_lane_timer_active": 2,  # LapDataPacket
+    "pit_lane_tyre_sim": 1,  # SessionData
+    "pit_limiter_status": 7,  # CarStatusPacket
+    "pit_release_assist": 1,  # SessionData
+    "pit_speed_limit_kph": 1,  # SessionData
+    "pit_status": 2,  # LapDataPacket
+    "pit_stop_experience": 1,  # SessionData
+    "pit_stop_ideal_lap": 1,  # SessionData
+    "pit_stop_latest_lap": 1,  # SessionData
+    "pit_stop_must_serve_pen": 2,  # LapDataPacket
+    "pit_stop_rejoin_position": 1,  # SessionData
+    "pitch_radians": 0,  # Motion
+    "places_gained": 3,  # EventPacket (PenaltyData)
+    "platform": 4,  # ParticipantsPacket
+    "player2_car_index": 0,  # Header (in all packets)
+    "player_car_index": 0,  # Header (in all packets)
+    "race_number": 4,  # ParticipantsPacket
+    "race_starts": 1,  # SessionData
+    "rear_anti_roll_bar": 5,  # CarSetupPacket
+    "rear_camber": 5,  # CarSetupPacket
+    "rear_left_tyre_pressure": 5,  # CarSetupPacket
+    "rear_right_tyre_pressure": 5,  # CarSetupPacket
+    "rear_suspension": 5,  # CarSetupPacket
+    "rear_suspension_height": 5,  # CarSetupPacket
+    "rear_toe": 5,  # CarSetupPacket
+    "rear_wing": 5,  # CarSetupPacket
+    "rear_wing_damage_percentage": 10,  # CarDamagePacket
+    "recommended_session": 12,  # TyreSetsPacket
+    "recovery_mode": 1,  # SessionData
+    "red_flags": 1,  # SessionData
+    "result_status": 2,  # LapDataPacket
+    "retired_flag": 3,  # EventPacket (CarRetirementData)
+    "retired_reason": 3,  # EventPacket (CarRetirementData)
+    "rev_lights_bit_value": 6,  # CarTelemetryPacket
+    "rev_lights_percent": 6,  # CarTelemetryPacket
+    "roll_radians": 0,  # Motion
+    "ruleset": 1,  # SessionData
+    "safety_car": 1,  # SessionData
+    "safety_car_data": 3,  # EventPacket (SafetycarData)
+    "safety_car_delta": 2,  # LapDataPacket
+    "safety_car_experience": 1,  # SessionData
+    "safety_car_status": 1,  # SessionData
+    "season_link_id": 1,  # SessionData
+    "sector": 2,  # LapDataPacket
+    "sector1_time_minutes_component": 2,  # LapDataPacket
+    "sector1_time_ms_component": 2,  # LapDataPacket
+    "sector2_time_minutes_component": 2,  # LapDataPacket
+    "sector2_time_ms_component": 2,  # LapDataPacket
+    "sector3_time_minutes_component": 11,  # SessionHistoryPacket
+    "sector3_time_ms_component": 11,  # SessionHistoryPacket
+    "sector_2_start_distance_m": 1,  # SessionData
+    "sector_3_start_distance_m": 1,  # SessionData
+    "session_distance_travelled_m": 2,  # LapDataPacket
+    "session_duration_seconds": 1,  # SessionData
+    "session_length": 1,  # SessionData
+    "session_link_id": 1,  # SessionData
+    "session_time": 0,  # Header (in all packets)
+    "session_time_remaining_seconds": 1,  # SessionData
+    "session_top_speedtrap": 2,  # LapDataPacket
+    "session_top_speedtrap_driver": 2,  # LapDataPacket
+    "session_type": 1,  # SessionData
+    "session_uuid": 0,  # Header (in all packets)
+    "sidepod_damage_percentage": 10,  # CarDamagePacket
+    "sli_pro_native_support": 1,  # SessionData
+    "spectator_car_index": 1,  # SessionData
+    "speed": 6,  # CarTelemetryPacket
+    "speed_trap_speed": 2,  # LapDataPacket
+    "speed_units_player1": 1,  # SessionData
+    "speed_units_player2": 1,  # SessionData
+    "steer": 6,  # CarTelemetryPacket
+    "steering_assist": 1,  # SessionData
+    "surface_type": 1,  # SessionData
+    "team_id": 4,  # ParticipantsPacket
+    "teammate_in_pits_flag": 3,  # EventPacket (TeammateInPitData)
+    "temp_units_player1": 1,  # SessionData
+    "temp_units_player2": 1,  # SessionData
+    "throttle": 6,  # CarTelemetryPacket
+    "time_gained": 3,  # EventPacket (PenaltyData)
+    "time_of_day": 1,  # SessionData
+    "total_race_laps": 1,  # SessionData
+    "total_warnings": 2,  # LapDataPacket
+    "track_id": 1,  # SessionData
+    "track_length_m": 1,  # SessionData
+    "track_temp_c": 1,  # SessionData
+    "traction_control": 7,  # CarStatusPacket
+    "tyre_actual_compound": 12,  # TyreSetsPacket
+    "tyre_age_laps": 7,  # CarStatusPacket
+    "tyre_blisters_percentage": 10,  # CarDamagePacket
+    "tyre_damage_percentage": 10,  # CarDamagePacket
+    "tyre_replaced_lap": 11,  # SessionHistoryPacket
+    "tyre_temps": 1,  # SessionData
+    "tyre_visual_compound": 12,  # TyreSetsPacket
+    "tyre_wear_percentage": 10,  # CarDamagePacket
+    "tyres_inner_temperature": 6,  # CarTelemetryPacket
+    "tyres_pressure": 6,  # CarTelemetryPacket
+    "tyres_surface_temperature": 6,  # CarTelemetryPacket
+    "usable_life": 12,  # TyreSetsPacket
+    "vehicle_flags_shown": 7,  # CarStatusPacket
+    "visual_tyre_compound": 12,  # TyreSetsPacket
+    "wear": 12,  # TyreSetsPacket
+    "weather": 1,  # SessionData
+    "weekend_link_id": 1,  # SessionData
+    "world_forward_direction_x": 0,  # Motion
+    "world_forward_direction_y": 0,  # Motion
+    "world_forward_direction_z": 0,  # Motion
+    "world_position_x": 0,  # Motion
+    "world_position_y": 0,  # Motion
+    "world_position_z": 0,  # Motion
+    "world_right_direction_x": 0,  # Motion
+    "world_right_direction_y": 0,  # Motion
+    "world_right_direction_z": 0,  # Motion
+    "world_velocity_x": 0,  # Motion
+    "world_velocity_y": 0,  # Motion
+    "world_velocity_z": 0,  # Motion
+    "yaw_radians": 0,  # Motion
+}
+
+
+def humanise(ms: int) -> str:
+    seconds = float(ms / 1000)
+    return f"{seconds:02.03f}s"
+
 
 def display_data(key, value):
     match key:
+        # Weather and Track Conditions
         case "weather":
-            return "Weather", WEATHER_TYPE_DICT[value]
-        # "world_forward_direction_x": {"name": "", "value": ""},
-        # "world_forward_direction_y": {"name": "", "value": ""},
-        # "world_forward_direction_z": {"name": "", "value": ""},
-        # "world_right_direction_x": {"name": "", "value": ""},
-        # "world_right_direction_y": {"name": "", "value": ""},
-        # "world_right_direction_z": {"name": "", "value": ""},
+            return "Weather", WEATHER_TYPE_DICT.get(value, "Unknown")
         case "track_temp_c":
-            return "Track Temp", f"{value} degC"
+            return "Track Temp", f"{value}°C"
         case "air_temp_c":
-            return "Air Temp", f"{value} degC"
+            return "Air Temp", f"{value}°C"
+        case "track_id":
+            return "Track", TRACK_DICT.get(value, "Unknown")
+
+        # Session Information
+        case "session_type":
+            return "Session", SESSION_TYPE_DICT.get(value, "Unknown")
+        case "session_length":
+            return "Session Length", SESSION_LENGTH_DICT.get(value, "Unknown")
+        case "ruleset":
+            return "Ruleset", RULESET_TYPE_DICT.get(value, "Unknown")
         case "total_race_laps":
             return "Race Length", f"{value} laps"
-        # "track_length_m": {"name": "", "value": ""},
-        case "session_type":
-            return "Session", SESSION_TYPE_DICT[value]
-        case "track_id":
-            return "Track", TRACK_DICT[value]
-        # "formula": {"name": "", "value": ""},
         case "session_time_remaining_seconds":
-            return "Time Remaining", str(value)
-        # "session_duration_seconds": {"name": "", "value": ""},
-        # "pit_speed_limit_kph": {"name": "", "value": ""},
-        # "game_paused": {"name": "", "value": ""},
+            return "Time Remaining", f"{value} seconds"
+        case "time_of_day":
+            return "Time of Day", f"{value}"
+
+        # Driver and Team Information
+        case "driver_id":
+            return "Driver", DRIVER_ID_DICT.get(value, "Unknown")
+        case "team_id":
+            return "Team", TEAM_ID_DICT.get(value, "Unknown")
+        case "nationality":
+            return "Nationality", NATIONALITY_DICT.get(value, "Unknown")
+        case "race_number":
+            return "Race Number", str(value)
+
+        # Car Status
+        case "car_position":
+            return "Position", str(value)
+        case "grid_position":
+            return "Grid Position", str(value)
+        case "driver_status":
+            return "Driver Status", DRIVER_STATUS_DICT.get(value, "Unknown")
+        case "result_status":
+            return "Result Status", RESULT_STATUS_DICT.get(value, "Unknown")
+        case "pit_status":
+            return "Pit Status", PIT_STATUS_DICT.get(value, "Unknown")
+        case "current_lap_invalid":
+            return "Lap Validity", LAP_VALID_DICT.get(value, "Unknown")
+
+        # Tyre Information
+        case "actual_tyre_compound":
+            return "Tyre Compound", TYRE_COMPOUND_DICT.get(value, "Unknown")
+        case "visual_tyre_compound":
+            return "Visual Tyre", TYRE_VISUAL_DICT.get(value, "Unknown")
+        case "tyre_age_laps":
+            return "Tyre Age", f"{value} laps"
+
+        # Vehicle Settings
+        case "fuel_mix":
+            return "Fuel Mix", FUEL_MIX_DICT.get(value, "Unknown")
+        case "traction_control":
+            return "Traction Control", TRACTION_CONTROL_DICT.get(value, "Unknown")
+        case "anti_lock_brakes":
+            return "ABS", ANTI_LOCK_BRAKES_DICT.get(value, "Unknown")
+        case "pit_limiter_status":
+            return "Pit Limiter", PIT_LIMITER_DICT.get(value, "Unknown")
+
+        # Assists and Driving Aids
+        case "steering_assist":
+            return "Steering Assist", ASSIT_DICT.get(value, "Unknown")
+        case "braking_assist":
+            return "Braking Assist", BRAKING_ASSIT_DICT.get(value, "Unknown")
+        case "gearbox_assist":
+            return "Gearbox Assist", GEARBOX_ASSIT_DICT.get(value, "Unknown")
+        case "drs_assist":
+            return "DRS Assist", ASSIT_DICT.get(value, "Unknown")
+        case "ers_assist":
+            return "ERS Assist", ASSIT_DICT.get(value, "Unknown")
+        case "pit_assist":
+            return "Pit Assist", ASSIT_DICT.get(value, "Unknown")
+        case "pit_release_assist":
+            return "Pit Release Assist", ASSIT_DICT.get(value, "Unknown")
+
+        # Race Control and Penalties
         case "safety_car_status":
-            return "Safety Car", SAFETY_CAR_STATUS_DICT[value]
-        # "ai_difficulty_level": {"name": "", "value": ""},
-        # "pit_stop_ideal_lap": {"name": "", "value": ""},
-        # "pit_stop_latest_lap": {"name": "", "value": ""},
-        # "pit_stop_rejoin_position": {"name": "", "value": ""},
-        # "steering_assist": {"name": "", "value": ""},
-        # "braking_assist": {"name": "", "value": ""},
-        # "gearbox_assist": {"name": "", "value": ""},
-        # "pit_assist": {"name": "", "value": ""},
-        # "pit_release_assist": {"name": "", "value": ""},
-        # "ers_assist": {"name": "", "value": ""},
-        # "drs_assist": {"name": "", "value": ""},
-        # "dynamic_racing_line": {"name": "", "value": ""},
-        # "dynamic_racing_line_type": {"name": "", "value": ""},
-        # "game_mode": {"name": "", "value": ""},
-        # "ruleset": {"name": "", "value": ""},
-        # "time_of_day": {"name": "", "value": ""},
-        # "session_length": {"name": "", "value": ""},
-        # "speed_units_player1": {"name": "", "value": ""},
-        # "temp_units_player1": {"name": "", "value": ""},
-        # "speed_units_player2": {"name": "", "value": ""},
-        # "temp_units_player2": {"name": "", "value": ""},
-        # "number_of_safetycar_incidents": {"name": "", "value": ""},
-        # "number_of_virtualsafetycar_incidents": {"name": "", "value": ""},
-        # "number_of_red_flags": {"name": "", "value": ""},
-        # "equal_car_performance": {"name": "", "value": ""},
-        # "recovery_mode": {"name": "", "value": ""},
-        # "flashback_limit": {"name": "", "value": ""},
-        # "surface_type": {"name": "", "value": ""},
-        # "low_fuel_mode": {"name": "", "value": ""},
-        # "race_starts": {"name": "", "value": ""},
-        # "tyre_temps": {"name": "", "value": ""},
-        # "pit_lane_tyre_sim": {"name": "", "value": ""},
-        # "car_damage": {"name": "", "value": ""},
-        # "car_damage_rate": {"name": "", "value": ""},
-        # "collisions": {"name": "", "value": ""},
-        # "collisions_first_lap_only": {"name": "", "value": ""},
-        # "multiplayer_unsafe_pit_release": {"name": "", "value": ""},
-        # "multiplayer_kick_for_griefing": {"name": "", "value": ""},
-        # "corner_cutting_stringency": {"name": "", "value": ""},
-        # "parc_ferme": {"name": "", "value": ""},
-        # "pit_stop_experience": {"name": "", "value": ""},
-        # "safety_car": {"name": "Safety Car", "value": SAFETY_CAR_STATUS_DICT[value]},
-        # "safety_car_experience": {"name": "", "value": ""},
-        # "formation_lap": {"name": "", "value": ""},
-        # "formation_lap_experience": {"name": "", "value": ""},
-        # "red_flags": {"name": "", "value": ""},
-        # "sector_2_start_distance_m": {"name": "", "value": ""},
-        # "sector_3_start_distance_m": {"name": "", "value": ""},
-        # "safety_car_data": {"name": "", "value": ""},
+            return "Safety Car", SAFETY_CAR_STATUS_DICT.get(value, "Unknown")
+        case "vehicle_flags_shown":
+            return "Flag Shown", VEHICLE_FLAG_SHOWN_DICT.get(value, "Unknown")
+        case "penalty_type":
+            return "Penalty Type", PENALTY_TYPE_DICT.get(value, "Unknown")
+        case "infringement_type":
+            return "Infringement", INFRINGEMENT_TYPE_DICT.get(value, "Unknown")
+        case "penalties":
+            return "Penalty Points", str(value)
+        case "total_warnings":
+            return "Warnings", str(value)
+
+        # DRS Information
+        case "drs":
+            return "DRS", "Open" if value == 1 else "Closed"
+        case "drs_allowed":
+            return "DRS Allowed", "Yes" if value == 1 else "No"
         case "drs_status":
-            return "DRS", str(value)
-        # "session_top_speedtrap": {"name": "", "value": ""},
-        # "session_top_speedtrap_driver": {"name": "", "value": ""},
+            return "DRS Status", str(value)
+
+        # Timing Information
+        case "last_lap_time_ms":
+            return "Last Lap", humanise(value)
+        case "current_lap_time_ms":
+            return "Current Lap", humanise(value)
+        case "delta_to_car_in_front_ms_component":
+            return "Delta (Front)", humanise(value)
+        case "delta_to_car_behind_ms":
+            return "Delta (Behind)", humanise(value)
+        case "delta_to_leader_ms_component":
+            return "Delta (Leader)", humanise(value)
+        case "sector1_time_ms_component":
+            return "Sector 1", humanise(value)
+        case "sector2_time_ms_component":
+            return "Sector 2", humanise(value)
+        case "sector3_time_ms_component":
+            return "Sector 3", humanise(value)
+
+        # Speed Information
+        case "speed":
+            return "Speed", f"{value} km/h"
+        case "fastest_speed_trap_speed_kph":
+            return "Fastest Speed Trap", f"{value} km/h"
+
+        # Engine and Telemetry
+        case "engine_rpm":
+            return "Engine RPM", str(value)
+        case "gear":
+            return "Gear", str(value) if value >= 0 else "R"
+        case "throttle":
+            return "Throttle", f"{value * 100:.1f}%"
+        case "brake":
+            return "Brake", f"{value * 100:.1f}%"
+        case "clutch":
+            return "Clutch", f"{value}%"
+        case "steer":
+            return "Steering", f"{value * 100:.1f}%"
+
+        # System and Configuration
+        case "network_game":
+            return "Network Game", NETWORK_GAME_STATUS_DICT.get(value, "Unknown")
+        case "equal_car_performance":
+            return "Equal Performance", EQUAL_CAR_PERFORMANCE_DICT.get(value, "Unknown")
+        case "recovery_mode":
+            return "Recovery Mode", RECOVERY_MODE_DICT.get(value, "Unknown")
+        case "flashback_limit":
+            return "Flashback Limit", FLASHBACK_LIMIT_DICT.get(value, "Unknown")
+        case "temp_units_player1":
+            return "Temperature Units", TEMPERATURE_UNIT_DICT.get(value, "Unknown")
+        case "speed_units_player1":
+            return "Speed Units", SPEED_UNIT_DICT.get(value, "Unknown")
+
+        # Default case for unhandled keys
+        case _:
+            return key.replace("_", " ").title(), str(value)

@@ -6,6 +6,7 @@
 """
 
 import multiprocessing
+import sys
 import time
 
 import rich
@@ -57,6 +58,68 @@ def generate_session_table(data, fields=None) -> Table:
     return table
 
 
+def generate_player_table(data, fields=None) -> Table:
+    two_players = False
+
+    table = Table()
+    table.add_column()
+    table.add_column("WG")
+    player1 = data[0]
+    player1_minus_one = data[1]
+    player1_plus_one = data[2]
+    player2 = data[3]
+    player2_minus_one = data[4]
+    player2_plus_one = data[5]
+
+    if player2.car_position != None:
+        two_players = True
+
+    try:
+        # Convert all to ms
+        player1.delta_to_car_behind_ms = (
+            player1.delta_to_leader_ms_component
+            - player1_plus_one.delta_to_leader_ms_component
+        ) * -1
+    # when they are still None
+    except TypeError:
+        player1.delta_to_car_behind_ms = None
+
+    # Second Player
+    if two_players:
+        table.add_column("SG")
+        try:
+            # Convert all to ms
+            player2.delta_to_car_behind_ms = (
+                player2.delta_to_leader_ms_component
+                - player2_plus_one.delta_to_leader_ms_component
+            ) * -1
+        except TypeError:
+            player2.delta_to_car_behind_ms = None
+
+    if fields is None:
+        rich.print("Please state fields for the car table")
+        sys.exit()
+
+    for field_name in fields:
+        field_value1 = getattr(player1, field_name)
+        if two_players:
+            field_value2 = getattr(player2, field_name)
+        if field_value1 is not None:
+            try:
+                k1, v1 = constants.display_data(field_name, field_value1)
+                if two_players:
+                    k2, v2 = constants.display_data(field_name, field_value2)
+                    table.add_row(k1, v1, v2)
+                else:
+                    table.add_row(k1, v1, None)
+            # if the filed isnt in the dict
+            except TypeError:
+                rich.print(f"Create 'display_data' entry for {field_name} and rerun...")
+                sys.exit()
+
+    return table
+
+
 def main():
     raw_queue = multiprocessing.Queue()
 
@@ -79,15 +142,28 @@ def main():
         "drs_status",
     ]
 
+    table_02_contents = [
+        "car_position",
+        "grid_position",
+        "delta_to_car_in_front_ms_component",
+        "delta_to_car_behind_ms",
+        "delta_to_leader_ms_component",
+    ]
+
+    combined_contents = table_01_contents + table_02_contents
+
     with Live(layout, refresh_per_second=10, screen=True):
         while True:
             if not raw_queue.empty():
                 data = raw_queue.get()
-                udp_filter.decode_packets(data)
+                udp_filter.decode_packets(data, combined_contents)
             else:
                 time.sleep(0.1)
-            layout["body"].update(
+            layout["box1"].update(
                 generate_session_table(state.session_data, table_01_contents)
+            )
+            layout["body"].update(
+                generate_player_table(state.surrounding_cars_data, table_02_contents)
             )
 
 
