@@ -6,7 +6,6 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 import rich
 from loguru import logger
@@ -373,6 +372,17 @@ def init_cars_data() -> dict:
     return {i: CarData() for i in range(22)}
 
 
+def init_surrounding_cars_data() -> dict:
+    # will use following indexes
+    # 0: player1
+    # 1: in front of player1
+    # 2: behind player1
+    # 3: player2
+    # 4: in front of player2
+    # 5: behind player2
+    return {i: CarData() for i in range(6)}
+
+
 def init_session_data() -> SessionData:
     return SessionData()
 
@@ -401,97 +411,87 @@ def update_with_motion(
     car_data[player_index].roll_radians = packet["roll_radians"]
 
 
-def update_with_sessiondata(packet, session_data: SessionData) -> None:
+def update_with_sessiondata(
+    packet, session_data: SessionData, fields: list[str]
+) -> None:
     ## Packet Header of 1
-    session_data.weather = packet["weather"]
-    session_data.track_temp_c = packet["track_temp_c"]
-    session_data.air_temp_c = packet["air_temp_c"]
-    session_data.total_race_laps = packet["total_race_laps"]
-    session_data.track_length_m = packet["track_length_m"]
-    session_data.session_type = packet["session_type"]
-    session_data.track_id = packet["track_id"]
-    session_data.formula = packet["formula"]
-    session_data.session_time_remaining_seconds = packet[
-        "session_time_remaining_seconds"
-    ]
-    session_data.session_duration_seconds = packet["session_duration_seconds"]
-    session_data.pit_speed_limit_kph = packet["pit_speed_limit_kph"]
-    session_data.game_paused = packet["game_paused"]
-    session_data.safety_car_status = packet["safety_car_status"]
-    session_data.ai_difficulty_level = packet["ai_difficulty_level"]
-    session_data.pit_stop_ideal_lap = packet["pit_stop_ideal_lap"]
-    session_data.pit_stop_latest_lap = packet["pit_stop_latest_lap"]
-    session_data.pit_stop_rejoin_position = packet["pit_stop_rejoin_position"]
-    session_data.steering_assist = packet["steering_assist"]
-    session_data.braking_assist = packet["braking_assist"]
-    session_data.gearbox_assist = packet["gearbox_assist"]
-    session_data.pit_assist = packet["pit_assist"]
-    session_data.pit_release_assist = packet["pit_release_assist"]
-    session_data.ers_assist = packet["ers_assist"]
-    session_data.drs_assist = packet["drs_assist"]
-    session_data.dynamic_racing_line = packet["dynamic_racing_line"]
-    session_data.dynamic_racing_line_type = packet["dynamic_racing_line_type"]
-    session_data.game_mode = packet["game_mode"]
-    session_data.ruleset = packet["ruleset"]
-    session_data.time_of_day = packet["time_of_day"]
-    session_data.session_length = packet["session_length"]
-    session_data.speed_units_player1 = packet["speed_units_player1"]
-    session_data.temp_units_player1 = packet["temp_units_player1"]
-    session_data.speed_units_player2 = packet["speed_units_player2"]
-    session_data.temp_units_player2 = packet["temp_units_player2"]
-    session_data.number_of_safetycar_incidents = packet["number_of_safetycar_incidents"]
-    session_data.number_of_virtualsafetycar_incidents = packet[
-        "number_of_virtualsafetycar_incidents"
-    ]
-    session_data.number_of_red_flags = packet["number_of_red_flags"]
-    session_data.equal_car_performance = packet["equal_car_performance"]
-    session_data.recovery_mode = packet["recovery_mode"]
-    session_data.flashback_limit = packet["flashback_limit"]
-    session_data.surface_type = packet["surface_type"]
-    session_data.low_fuel_mode = packet["low_fuel_mode"]
-    session_data.race_starts = packet["race_starts"]
-    session_data.tyre_temps = packet["tyre_temps"]
-    session_data.pit_lane_tyre_sim = packet["pit_lane_tyre_sim"]
-    session_data.car_damage = packet["car_damage"]
-    session_data.car_damage_rate = packet["car_damage_rate"]
-    session_data.collisions = packet["collisions"]
-    session_data.collisions_first_lap_only = packet["collisions_first_lap_only"]
-    session_data.multiplayer_unsafe_pit_release = packet[
-        "multiplayer_unsafe_pit_release"
-    ]
-    session_data.multiplayer_kick_for_griefing = packet["multiplayer_kick_for_griefing"]
-    session_data.corner_cutting_stringency = packet["corner_cutting_stringency"]
-    session_data.parc_ferme = packet["parc_ferme"]
-    session_data.pit_stop_experience = packet["pit_stop_experience"]
-    session_data.safety_car = packet["safety_car"]
-    session_data.safety_car_experience = packet["safety_car_experience"]
-    session_data.formation_lap = packet["formation_lap"]
-    session_data.formation_lap_experience = packet["formation_lap_experience"]
-    session_data.red_flags = packet["red_flags"]
-    session_data.sector_2_start_distance_m = packet["sector_2_start_distance_m"]
-    session_data.sector_3_start_distance_m = packet["sector_3_start_distance_m"]
-
-    # Update marshal zones
-    marshal_zones = packet["list_of_marshal_zones"]
-    for i, zone in enumerate(marshal_zones):
-        if i < 21:  # Max 21 marshal zones
-            session_data.marshal_zones[
-                f"marshal_zone_{i + 1:02d}_start_at_lap_percentage"
-            ] = zone.zone_start_at_lap_percentage
-            session_data.marshal_zones[f"marshal_zone_{i + 1:02d}_flag_type"] = (
-                zone.zone_flag_type
-            )
+    for field in fields:
+        if field in packet:
+            if field == "marshal_zones":
+                marshal_zones = packet["list_of_marshal_zones"]
+                for i, zone in enumerate(marshal_zones):
+                    if i < 21:  # Max 21 marshal zones
+                        session_data.marshal_zones[
+                            f"marshal_zone_{i + 1:02d}_start_at_lap_percentage"
+                        ] = zone.zone_start_at_lap_percentage
+                        session_data.marshal_zones[
+                            f"marshal_zone_{i + 1:02d}_flag_type"
+                        ] = zone.zone_flag_type
+            else:
+                setattr(session_data, field, packet[field])
 
 
-def update_with_lapdata(packet, car_data: dict[int, CarData], user_idx: int) -> None:
-    ## Packet Header of 2
+def update_with_lapdata(packet, car_data, surrounding_cars, user_idx, requested_data):
     sent_car_data = packet["cars"]
+    two_players = user_idx[1] != 255
+    target_positions = set()
+
+    # Single pass to update positions
     for index, item in enumerate(sent_car_data):
         decoded_item = classes.LapData.from_buffer_copy(item)
-        # Convert to dict and update car data
-        item_data = {k: getattr(decoded_item, k) for k, _ in decoded_item._fields_}
-        for key, value in item_data.items():
-            setattr(car_data[index], key, value)
+        car_position = decoded_item.car_position
+        car_data[index].car_position = car_position
+
+    # Calculate target positions
+    p1_pos = car_data[user_idx[0]].car_position
+    target_positions.update([p1_pos, p1_pos - 1, p1_pos + 1])
+
+    if two_players:
+        p2_pos = car_data[user_idx[1]].car_position
+        target_positions.update([p2_pos, p2_pos - 1, p2_pos + 1])
+
+    target_positions = {x for x in target_positions if x > 0}
+
+    # Update target cars
+    for index, item in enumerate(sent_car_data):
+        current_position = car_data[index].car_position
+        if current_position in target_positions:
+            decoded_item = classes.LapData.from_buffer_copy(item)
+            # Batch process requested data
+            updates = []
+            for k in requested_data:
+                try:
+                    updates.append((k, getattr(decoded_item, k)))
+                except AttributeError:
+                    pass  # Skip attributes not in class
+
+            # Apply updates efficiently
+            for key, value in updates:
+                if current_position == p1_pos:
+                    setattr(surrounding_cars[0], key, value)
+                try:
+                    if current_position == p1_pos - 1:
+                        setattr(surrounding_cars[1], key, value)
+                except UnboundLocalError:
+                    surrounding_cars[1] = surrounding_cars[0]
+                try:
+                    if current_position == p1_pos + 1:
+                        setattr(surrounding_cars[2], key, value)
+                except UnboundLocalError:
+                    surrounding_cars[2] = surrounding_cars[0]
+                if two_players:
+                    if current_position == p2_pos:
+                        setattr(surrounding_cars[3], key, value)
+                    try:
+                        if current_position == p2_pos - 1:
+                            setattr(surrounding_cars[4], key, value)
+                    except UnboundLocalError:
+                        surrounding_cars[4] = surrounding_cars[3]
+                    try:
+                        if current_position == p2_pos + 1:
+                            setattr(surrounding_cars[5], key, value)
+                    except UnboundLocalError:
+                        surrounding_cars[5] = surrounding_cars[3]
 
 
 def update_with_event_data(

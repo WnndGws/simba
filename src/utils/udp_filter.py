@@ -26,6 +26,7 @@ class SharedStateManager:
         self.session_data = self.manager.Namespace()
         self.admin_data = self.manager.Namespace()
         self.cars_data = self.manager.dict()
+        self.surrounding_cars_data = self.manager.dict()
 
         # Initialize with default values
         self._initialize_data()
@@ -35,6 +36,7 @@ class SharedStateManager:
         session_instance = create_dataclasses.init_session_data()
         admin_instance = create_dataclasses.init_admin_data()
         cars_instance = create_dataclasses.init_cars_data()
+        surrounding_cars_instance = create_dataclasses.init_surrounding_cars_data()
 
         # For session_data and admin_data, copy attributes to Namespace
         for key, value in session_instance.__dict__.items():
@@ -49,6 +51,13 @@ class SharedStateManager:
             for key, value in car_instance.__dict__.items():
                 setattr(car_proxy, key, value)
             self.cars_data[car_id] = car_proxy
+
+        # Same goes for surrounding cars
+        for car_id, car_instance in surrounding_cars_instance.items():
+            car_proxy = self.manager.Namespace()
+            for key, value in car_instance.__dict__.items():
+                setattr(car_proxy, key, value)
+            self.surrounding_cars_data[car_id] = car_proxy
 
 
 # Global shared state manager
@@ -74,14 +83,16 @@ def start_udp_queue(output: multiprocessing.Queue):
     receiver_thread.start()
 
 
-def decode_packets(packet):
+def decode_packets(packet, requested_data):
     # logger.trace(packet)
 
     state = get_shared_state()
 
+    required_headers = (constants.DATA_TO_HEADER_DICT[_] for _ in requested_data)
+
     header_data = classes.Header.from_buffer_copy(packet)
     packet_id = header_data.packet_id
-    user_car = header_data.player_car_index
+    user_car = [header_data.player_car_index, header_data.player2_car_index]
     logger.debug(f"Received header packet_id of: {packet_id}")
 
     if packet_id not in constants.PACKET_CLASS_DICT:
@@ -96,6 +107,8 @@ def decode_packets(packet):
     # Update the admin data with header information
     state.admin_data.packet_id = packet_id
 
+    if packet_id not in required_headers:
+        return
     # Update shared state with locking for thread safety
     with state.lock:
         match packet_id:
@@ -108,11 +121,15 @@ def decode_packets(packet):
                 )
             case 1:
                 create_dataclasses.update_with_sessiondata(
-                    packet_data, state.session_data
+                    packet_data, state.session_data, requested_data
                 )
             case 2:
                 create_dataclasses.update_with_lapdata(
-                    packet_data, state.cars_data, user_car
+                    packet_data,
+                    state.cars_data,
+                    state.surrounding_cars_data,
+                    user_car,
+                    requested_data,
                 )
             case 3:
                 create_dataclasses.update_with_event_data(
