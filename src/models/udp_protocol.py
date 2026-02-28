@@ -228,13 +228,13 @@ class SessionPacket:
         decoded.append(list_of_weather)
 
         for idx, item in enumerate(range(53)):
-            item = values[idx + 16 + 42 + 512]
+            item = values[idx + 16 + 42 + 3 + 512]
             decoded.append(item)
 
-        weekend_structure = [values[idx + 16 + 42 + 512 + 53] for idx in range(12)]
+        weekend_structure = [values[idx + 16 + 42 + 3 + 512 + 53] for idx in range(12)]
         decoded.append(weekend_structure)
-        decoded.append(values[16 + 42 + 512 + 12 + 1])
-        decoded.append(values[16 + 42 + 512 + 12 + 2])
+        decoded.append(values[-2])
+        decoded.append(values[-1])
 
         return cls(*decoded)
 
@@ -319,7 +319,7 @@ EVENT_STRUCT = struct.Struct("<4s12s")
 
 @dataclass
 class EventPacket:
-    event_code_string: str
+    event_code: str
     _registry: ClassVar[dict[str, type]] = {}
 
     def __init_subclass__(cls, **kwargs):
@@ -337,13 +337,13 @@ class EventPacket:
 
         subclass = cls._registry.get(code)
         if subclass:
-            return subclass._decode_payload(mem, payload_offset, code)
+            return subclass._decode_payload(mem, payload_offset)
 
         # Simple events with no payload (SSTA, SEND, etc.)
         return cls(code)
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(mem: memoryview, offset: int):
         # for subclasses that only have data
         raise NotImplementedError
 
@@ -357,9 +357,9 @@ class FastestLap(EventPacket):
     fastest_lap_seconds: float
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Fastest Lap", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -371,9 +371,9 @@ class Retirement(EventPacket):
     retirement_reason: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Retirement", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -384,9 +384,9 @@ class DrsDisabled(EventPacket):
     reason: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("DRS Disabled", val)
+        return cls(val)
 
 
 @dataclass
@@ -397,9 +397,9 @@ class Teammateinpit(EventPacket):
     car_idx_of_teammate: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Teammate in Pit", val)
+        return cls(val)
 
 
 @dataclass
@@ -410,9 +410,9 @@ class Racewinner(EventPacket):
     car_idx_of_winner: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Race Winner", val)
+        return cls(val)
 
 
 @dataclass
@@ -429,9 +429,9 @@ class Penalty(EventPacket):
     places_gained: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Penalty", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -447,9 +447,9 @@ class Speedtrap(EventPacket):
     fastest_speed_in_session_kph: float
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Speedtrap", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -460,9 +460,9 @@ class Startlights(EventPacket):
     number_of_lit_lights: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Start lights", val)
+        return cls(val)
 
 
 @dataclass
@@ -473,9 +473,9 @@ class Drivethroughpenalty(EventPacket):
     car_idx_of_serving: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Drive Through Penalty", val)
+        return cls(val)
 
 
 @dataclass
@@ -486,9 +486,9 @@ class Stopgopenalty(EventPacket):
     car_idx_of_serving: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Stop Go Penalty", val)
+        return cls(val)
 
 
 @dataclass
@@ -500,9 +500,9 @@ class Flashback(EventPacket):
     flashback_to_time: float
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Flashback", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -513,9 +513,9 @@ class Buttonpressed(EventPacket):
     button_pressed: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Button", val)
+        return cls(val)
 
 
 @dataclass
@@ -527,9 +527,9 @@ class Overtake(EventPacket):
     losing_car_idx: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Overtake", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -541,9 +541,9 @@ class Collision(EventPacket):
     car_2_idx: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Collision", *values)
+        return cls(*values)
 
 
 @dataclass
@@ -555,9 +555,9 @@ class Safetycar(EventPacket):
     safety_car_status: int
 
     @classmethod
-    def _decode_payload(cls, mem: memoryview, offset: int, code: str):
+    def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls("Safety Car", *values)
+        return cls(*values)
 
 
 ## --------------------------- ##
@@ -611,7 +611,7 @@ class ParticipantsPacket:
         number_of_repeats = 22
         participants = [
             Participant(*chunk)
-            for chunk in islice(batched(values, length_of_data), number_of_repeats)
+            for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(participants)
 
@@ -800,7 +800,7 @@ class StatusPacket:
         ]
         decoded.append(setups)
 
-        return cls(decoded)
+        return cls(*decoded)
 
 
 ## ----------------------------------- ##
@@ -864,12 +864,12 @@ class ClassificationPacket:
         length_of_data = 36
         number_of_repeats = 22
         cars = [
-            Status(*chunk)
+            Classification(*chunk)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(cars)
 
-        return cls(decoded)
+        return cls(*decoded)
 
 
 ## ------------------------- ##
@@ -978,7 +978,7 @@ class DamagePacket:
         ]
         decoded.append(setups)
 
-        return cls(decoded)
+        return cls(*decoded)
 
 
 ## ------------------------------ ##
@@ -1029,7 +1029,7 @@ class SessionHistoryPacket:
         number_of_laps = 100
         laps = [
             LapHistory(*chunk)
-            for chunk in islice(batched(values[8:], length_of_laps), number_of_laps)
+            for chunk in islice(batched(values[7:], length_of_laps), number_of_laps)
         ]
         decoded.append(laps)
 

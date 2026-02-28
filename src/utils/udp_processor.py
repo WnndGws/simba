@@ -7,14 +7,18 @@
 
 import struct
 import time
-from multiprocessing import Process, shared_memory
+from multiprocessing import Process, Queue, shared_memory
 
-from model import udp_protocol
+from loguru import logger
+
+from models import udp_protocol
 from utils import udp_receiver
 
 
 def process_named_shared_memory(
-    shared_memory_name="udp_queue", shared_memory_size=100 * 1024 * 1024
+    output_queue: Queue,
+    shared_memory_name: str = "udp_queue",
+    shared_memory_size: int = 100 * 1024 * 1024,
 ):
     shm = shared_memory.SharedMemory(name=shared_memory_name)
     slot_size = 65535 + 9
@@ -30,7 +34,7 @@ def process_named_shared_memory(
 
             # Clear flag and process
             shm.buf[offset + 4 + 65535] = 0
-            decode_udp(data, length)
+            output_queue.put_nowait(decode_udp(data, length))
             read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
         else:
             time.sleep(0.01)  # Backoff when empty
@@ -74,13 +78,12 @@ def decode_udp(packet: bytes, length: int):
         case _:
             values = None
 
-    print(header)
+    return (header, values)
 
 
 if __name__ == "__main__":
     receiver = Process(target=udp_receiver.udp_receiver, daemon=True)
     receiver.start()
 
-    decoder = Process(target=process_named_shared_memory, daemon=True)
-    decoder.start()
-    decoder.join()
+    queue = Queue()
+    process_named_shared_memory(output_queue=queue)

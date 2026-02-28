@@ -1,0 +1,7 @@
+[pytest]
+markers = [
+  "sq: marks tests as sprint-qualifying",
+  "sr: marks tests as sprint-race",
+  "rq: marks tests as qualifying",
+  "rr: marks tests as race",
+]
