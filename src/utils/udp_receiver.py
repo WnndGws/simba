@@ -9,7 +9,28 @@ ie sends them to shared memory"""
 
 import socket
 import struct
+import sys
 from multiprocessing import shared_memory
+
+from loguru import logger
+from rich.logging import RichHandler
+
+# Setup logger with RichHandler for better output
+logger.remove()
+logger.add(
+    sys.stderr,
+)
+logger.configure(
+    handlers=[
+        {"sink": "udp.log", "level": "WARNING"},
+        {
+            "sink": RichHandler(
+                rich_tracebacks=True, show_path=True, tracebacks_show_locals=True
+            ),
+            "level": "INFO",
+        },
+    ]
+)
 
 
 def udp_receiver(

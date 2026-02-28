@@ -4,7 +4,12 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+  "loguru>=0.7.3",
+  "pyspy>=0.1.1",
+  "pytest>=9.0.2",
+  "textual>=8.0.0",
+]
 
 [tool.uv]
 package = true
