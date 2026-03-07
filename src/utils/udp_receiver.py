@@ -56,6 +56,8 @@ def udp_receiver(
 
     while True:
         data, addr = sock.recvfrom(65535)
+        if not data:
+            continue
         offset = write_idx * slot_size
 
         # Write atomically: length + data + ready flag

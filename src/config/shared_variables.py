@@ -15,6 +15,8 @@ motion = None
 # Header 1
 prev_session = None
 session = None
+session_cache = 255
+session_type_cache = 255
 
 # Header 2
 prev_lapdata = None

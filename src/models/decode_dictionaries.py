@@ -463,7 +463,7 @@ driver_dict = {
     165: "Andrea-Kimi Antonelli",
     166: "Ritomo Miyata",
     167: "Rafael Villagómez",
-    168: "Zak O’Sullivan",
+    168: "Zak O'Sullivan",
     169: "Pepe Marti",
     17: "Esteban Ocon",
     170: "Sonny Hayes",
