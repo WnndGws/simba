@@ -587,6 +587,7 @@ def set_event_events():
     header = sv.header
     event = sv.event
     session = sv.session
+    lapdata = sv.lapdata
 
     if session is not None:
         _s1 = dc.tract_dict[session.track_id]
@@ -603,12 +604,13 @@ def set_event_events():
                 _s4 = surround_by_div(
                     f"Fastest Lap: {dc.driver_dict[sv.participants[event.fastest_lap_car_id].driver_id]}"
                 )
-                _s5 = surround_by_div(sv.event_fastest_lap["driver"])
-                _s6 = surround_by_div(humanise(sv.event_fastest_lap["time"]))
-                _s7 = surround_by_div(f"Lap {sv.event_fastest_lap['lap']}")
-                _s8 = surround_by_div(f"{_s5}{_s6}{_s7}")
+                _s5 = surround_by_div(humanise(event.fastest_lap_seconds * 1000))
+                _s6 = surround_by_div(
+                    f"Lap {lapdata.cars[event.fastest_lap_car_id]['current_lap_number' - 1]}"
+                )
+                _s7 = surround_by_div(f"{_s4}{_s5}{_s6}")
                 _title = surround_by_div("SESSION BEST")
-                fastest_lap_string = f"{_title}{_s8}"
+                fastest_lap_string = f"{_title}{_s7}"
                 return ("fastest_lap_string", fastest_lap_string)
             case "RTMT":
                 _driver = dc.driver_dict[
@@ -681,20 +683,20 @@ def calc_gap_to_p2():
 
     player_controlled_cars = [
         idx for idx, _ in enumerate(participants) if _.is_ai_controlled_flag == 0
-    ].remove(player)
+    ].remove(header.player_car_index)
 
     if header.player2_car_index != 255:
         player_2 = lapdata.cars[header.player2_car_index]
         player_2_gap_to_leader = player_2.delta_to_leader_ms_component
         delta_to_player_2 = humanise(player_2_gap_to_leader - player_gap_to_leader)
         _s2 = surround_by_div(f"P2: {delta_to_player_2}")
+    elif player_controlled_cars is None:
+        _s2 = ""
     elif len(player_controlled_cars) == 1:
         player_2 = next(player_controlled_cars)
         player_2_gap_to_leader = player_2.delta_to_leader_ms_component
         delta_to_player_2 = humanise(player_2_gap_to_leader - player_gap_to_leader)
         _s2 = surround_by_div(f"P2: {delta_to_player_2}")
-    else:
-        _s2 = ""
 
     _s1 = surround_by_div(f"Leader: {humanise(player_gap_to_leader)}")
     _title = "DELTAS"
