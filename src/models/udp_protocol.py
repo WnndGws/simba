@@ -6,9 +6,145 @@
 """
 
 import struct
-from dataclasses import dataclass
+import sys
+from dataclasses import asdict, dataclass
 from itertools import batched, islice
 from typing import ClassVar
+
+from rich import print
+
+from models import decode_dictionaries
+
+
+## ------------------------------- ##
+## ------ Helper Functions ------- ##
+## ------------------------------- ##
+def decode_decoded_enums(
+    name_of_class: str,
+    decode_mapping_dict: dict,
+) -> list:
+    try:
+        return {
+            k: (decode_mapping_dict[k][v] if k in decode_mapping_dict else v)
+            for k, v in asdict(name_of_class).items()
+        }
+    except KeyError:
+        for k, v in asdict(name_of_class).items():
+            if k in decode_mapping_dict:
+                try:
+                    _new = decode_mapping_dict[k][v]
+                except KeyError:
+                    print(k)
+                    print(v)
+                    print(decode_mapping_dict[k])
+
+
+session_decode_mapping = {
+    "weather": decode_dictionaries.weather_forecast_dict,
+    "session_type": decode_dictionaries.sessiontype_dict,
+    "track_id": decode_dictionaries.track_dict,
+    "formula": decode_dictionaries.formula_dict,
+    "sli_pro_native_support": decode_dictionaries.sli_dict,
+    "safety_car_status": decode_dictionaries.safetycar_dict,
+    "network_game": decode_dictionaries.networkgame_dict,
+    "weather_forecast_accuracy": decode_dictionaries.forecastaccuracy_dict,
+    "steering_assist": decode_dictionaries.steeringassist_dict,
+    "braking_assist": decode_dictionaries.brakingassist_dict,
+    "gearbox_assist": decode_dictionaries.gearboxassist_dict,
+    "pit_assist": decode_dictionaries.pitassist_dict,
+    "pit_release_assist": decode_dictionaries.pitreleaseassist_dict,
+    "ers_assist": decode_dictionaries.ersassist_dict,
+    "drs_assist": decode_dictionaries.drsassist_dict,
+    "dynamic_racing_line": decode_dictionaries.dynamicracingline_dict,
+    "dynamic_racing_line_type": decode_dictionaries.dynamicracinglinetype_dict,
+    "session_length": decode_dictionaries.sessionlength_dict,
+    "speed_units_player1": decode_dictionaries.speedunitsplayer_dict,
+    "temp_units_player1": decode_dictionaries.temperatureunitsplayer_dict,
+    "speed_units_player2": decode_dictionaries.speedunitsplayer_dict,
+    "temp_units_player2": decode_dictionaries.temperatureunitsplayer_dict,
+    "equal_car_performance": decode_dictionaries.equalcarperformance_dict,
+    "recovery_mode": decode_dictionaries.recoverymode_dict,
+    "flashback_limit": decode_dictionaries.flashbacklimit_dict,
+    "surface_type": decode_dictionaries.surfacetype_dict,
+    "low_fuel_mode": decode_dictionaries.lowfuelmode_dict,
+    "race_starts": decode_dictionaries.racestarts_dict,
+    "tyre_temps": decode_dictionaries.tyretemperature_dict,
+    "pit_lane_tyre_sim": decode_dictionaries.pitlanetyresim_dict,
+    "car_damage": decode_dictionaries.cardamage_dict,
+    "car_damage_rate": decode_dictionaries.cardamagerate_dict,
+    "collisions": decode_dictionaries.collisions_dict,
+    "collisions_first_lap_only": decode_dictionaries.collisionsoffforfirstlaponly_dict,
+    "multiplayer_unsafe_pit_release": decode_dictionaries.mpunsafepitrelease_dict,
+    "multiplayer_kick_for_griefing": decode_dictionaries.mpoffforgriefing_dict,
+    "corner_cutting_stringency": decode_dictionaries.cornercuttingstringency_dict,
+    "parc_ferme": decode_dictionaries.parcfermerules_dict,
+    "pit_stop_experience": decode_dictionaries.pitstopexperience_dict,
+    "safety_car": decode_dictionaries.safetycar_dict,
+    "safety_car_experience": decode_dictionaries.safetycarexperience_dict,
+    "formation_lap": decode_dictionaries.formationlap_dict,
+    "formation_lap_experience": decode_dictionaries.formationlapexperience_dict,
+    "red_flags": decode_dictionaries.redflags_dict,
+    "affects_licence_level_solo": decode_dictionaries.affectslicencelevelsolo_dict,
+    "affects_licence_level_multiplayer": decode_dictionaries.affectslicencelevelmp_dict,
+}
+marshalzone_decode_mapping = {
+    "zone_flag_type": decode_dictionaries.marshal_zone_flag_dict
+}
+weather_decode_mapping = {
+    "session_type": decode_dictionaries.sessiontype_dict,
+    "weather": decode_dictionaries.weather_forecast_dict,
+    "track_temp_change_c": decode_dictionaries.weather_forecast_change_dict,
+    "air_temp_change_c": decode_dictionaries.weather_forecast_change_dict,
+}
+lapdata_decode_mapping = {
+    "pit_status": decode_dictionaries.pitstatus_dict,
+    "sector": decode_dictionaries.sector_dict,
+    "current_lap_invalid": decode_dictionaries.currentlapinvalid_dict,
+    "driver_status": decode_dictionaries.driverstatus_dict,
+    "result_status": decode_dictionaries.result_dict,
+}
+penalties_decode_mapping = {
+    "pentalty_type": decode_dictionaries.penaltytype_dict,
+    "infringement_type": decode_dictionaries.infringementtype_dict,
+}
+safetycar_decode_mapping = {
+    "safety_car_type": decode_dictionaries.safetycartype_dict,
+    "safety_car_status": decode_dictionaries.safetycarstatus_dict,
+}
+participants_decode_mapping = {
+    "network_telemetry_flag": decode_dictionaries.telemetry_dict,
+    "platform": decode_dictionaries.platform_dict,
+}
+telemetry_decode_mapping = {"drs": decode_dictionaries.drsstatus_dict}
+status_decode_mapping = {
+    "traction_control": decode_dictionaries.tractioncontrol_dict,
+    "anti_lock_brakes": decode_dictionaries.antilockbrakes_dict,
+    "fuel_mix": decode_dictionaries.fuelmix_dict,
+    "pit_limiter_status": decode_dictionaries.pitlimiterstatus_dict,
+    "drs_allowed": decode_dictionaries.drsallowed_dict,
+    "actual_tyre_compound": decode_dictionaries.actualtyrecompound_dict,
+    "visual_tyre_compound": decode_dictionaries.visualtyrecompound_dict,
+    "vehicle_flags_shown": decode_dictionaries.vehiclefiaflags_dict,
+    "ers_deploy_mode": decode_dictionaries.ersdeploymode_dict,
+}
+classification_decode_mapping = {
+    "result_status": decode_dictionaries.resultstatus_dict,
+    "result_reason": decode_dictionaries.resultreason_dict,
+}
+lobby_decode_mapping = {
+    "team_id": decode_dictionaries.teams_dict,
+    "nationality": decode_dictionaries.nationality_dict,
+    "platform": decode_dictionaries.platform_dict,
+    "your_telemetry": decode_dictionaries.yourtelemetry_dict,
+    "show_online_names": decode_dictionaries.showonlinenames_dict,
+    "ready_status": decode_dictionaries.readystatus_dict,
+}
+damage_decode_mapping = {
+    "drs_fault": decode_dictionaries.drsfault_dict,
+    "ers_fault": decode_dictionaries.ersfault_dict,
+    "engine_blown": decode_dictionaries.engineblown_dict,
+    "engine_seized": decode_dictionaries.engineseized_dict,
+}
 
 ## --------------------- ##
 ## ------ HEADER ------- ##
@@ -25,7 +161,7 @@ class Header:
     game_minor_version: int
     packet_version: int
     packet_id: int
-    session_uuid: int
+    session_uuid: int | str
     session_time: float
     frame_id: int
     overall_frame: int
@@ -33,10 +169,13 @@ class Header:
     player2_car_index: int
 
     @classmethod
-    def decode(cls, packet: bytes, offset: int = 0):
+    def decode(cls, packet: bytes, offset: int = 0) -> dict:
         mem = memoryview(packet)
         values = HEADER_STRUCT.unpack(mem[:29])
-        return cls(*values)
+        return {
+            k: (str(v) if k == "session_uuid" else v)
+            for k, v in asdict(cls(*values)).items()
+        }
 
 
 ## --------------------- ##
@@ -74,16 +213,18 @@ class MotionPacket:
     cars: list[Motion]
 
     @classmethod
-    def decode(cls, packet: bytes, offset: int = 29):
+    def decode(cls, packet: bytes, offset: int = 29) -> dict:
         mem = memoryview(packet)
         values = MOTION_STRUCT.unpack_from(mem, offset)
         length_of_data = 18
         number_of_repeats = 22
         decoded = [
-            Motion(*chunk)
-            for chunk in islice(batched(values, length_of_data), number_of_repeats)
+            asdict(Motion(*chunk))
+            for chunk in islice(
+                batched(values, length_of_data, strict=True), number_of_repeats
+            )
         ]
-        return cls(decoded)
+        return asdict(cls(decoded))
 
 
 ## ---------------------- ##
@@ -97,9 +238,9 @@ SESSION_STRUCT = struct.Struct(
     + "BBB"
     + "BBBbbbbB" * 64
     + "BBIII"
-    + "B" * 18
+    + "B" * 14
     + "I"
-    + "B" * 41
+    + "B" * 34
     + "ff"
 )
 
@@ -107,96 +248,96 @@ SESSION_STRUCT = struct.Struct(
 @dataclass
 class Marshalzone:
     zone_start_at_lap_percentage: float
-    zone_flag_type: int
+    zone_flag_type: int | str
 
 
 @dataclass
 class Weather:
-    session_type: int
+    session_type: int | str
     time_offset: int
-    weather: int
+    weather: int | str
     track_temp_c: int
-    track_temp_change_c: int
+    track_temp_change_c: int | str
     air_temp_c: int
-    air_temp_change_c: int
+    air_temp_change_c: int | str
     rain_percentage: int
 
 
 @dataclass
 class SessionPacket:
-    weather: int
+    weather: int | str
     track_temp_c: int
     air_temp_c: int
     total_race_laps: int
     track_length_m: int
-    session_type: int
-    track_id: int
-    formula: int
+    session_type: int | str
+    track_id: int | str
+    formula: int | str
     session_time_remaining_seconds: int
     session_duration_seconds: int
     pit_speed_limit_kph: int
     game_paused: int
     is_spectating: int
     spectator_car_index: int
-    sli_pro_native_support: int
+    sli_pro_native_support: int | str
     number_of_marshal_zones: int
     list_of_marshal_zones: list[Marshalzone]
-    safety_car_status: int
-    network_game: int
+    safety_car_status: int | str
+    network_game: int | str
     number_of_weather_forecast_samples: int
     weather_forecasts: list[Weather]
-    weather_forecast_accuracy: int
+    weather_forecast_accuracy: int | str
     ai_difficulty_level: int
-    season_link_id: int
-    weekend_link_id: int
-    session_link_id: int
+    season_link_id: int | str
+    weekend_link_id: int | str
+    session_link_id: int | str
     pit_stop_ideal_lap: int
     pit_stop_latest_lap: int
     pit_stop_rejoin_position: int
-    steering_assist: int
-    braking_assist: int
-    gearbox_assist: int
-    pit_assist: int
-    pit_release_assist: int
-    ers_assist: int
-    drs_assist: int
-    dynamic_racing_line: int
-    dynamic_racing_line_type: int
+    steering_assist: int | str
+    braking_assist: int | str
+    gearbox_assist: int | str
+    pit_assist: int | str
+    pit_release_assist: int | str
+    ers_assist: int | str
+    drs_assist: int | str
+    dynamic_racing_line: int | str
+    dynamic_racing_line_type: int | str
     game_mode: int
     ruleset: int
     time_of_day: int
-    session_length: int
-    speed_units_player1: int
-    temp_units_player1: int
-    speed_units_player2: int
-    temp_units_player2: int
+    session_length: int | str
+    speed_units_player1: int | str
+    temp_units_player1: int | str
+    speed_units_player2: int | str
+    temp_units_player2: int | str
     number_of_safetycar_incidents: int
     number_of_virtualsafetycar_incidents: int
     number_of_red_flags: int
-    equal_car_performance: int
-    recovery_mode: int
-    flashback_limit: int
-    surface_type: int
-    low_fuel_mode: int
-    race_starts: int
-    tyre_temps: int
-    pit_lane_tyre_sim: int
-    car_damage: int
-    car_damage_rate: int
-    collisions: int
-    collisions_first_lap_only: int
-    multiplayer_unsafe_pit_release: int
-    multiplayer_kick_for_griefing: int
-    corner_cutting_stringency: int
-    parc_ferme: int
-    pit_stop_experience: int
-    safety_car: int
-    safety_car_experience: int
-    formation_lap: int
-    formation_lap_experience: int
-    red_flags: int
-    affects_licence_level_solo: int
-    affects_licence_level_multiplayer: int
+    equal_car_performance: int | str
+    recovery_mode: int | str
+    flashback_limit: int | str
+    surface_type: int | str
+    low_fuel_mode: int | str
+    race_starts: int | str
+    tyre_temps: int | str
+    pit_lane_tyre_sim: int | str
+    car_damage: int | str
+    car_damage_rate: int | str
+    collisions: int | str
+    collisions_first_lap_only: int | str
+    multiplayer_unsafe_pit_release: int | str
+    multiplayer_kick_for_griefing: int | str
+    corner_cutting_stringency: int | str
+    parc_ferme: int | str
+    pit_stop_experience: int | str
+    safety_car: int | str
+    safety_car_experience: int | str
+    formation_lap: int | str
+    formation_lap_experience: int | str
+    red_flags: int | str
+    affects_licence_level_solo: int | str
+    affects_licence_level_multiplayer: int | str
     number_of_sessions_in_weekend: int
     weekend_structure: [int]
     sector_2_start_distance_m: float
@@ -214,29 +355,35 @@ class SessionPacket:
             decoded.append(item)
 
         list_of_marshal_zones = [
-            Marshalzone(*chunk) for chunk in islice(batched(values[16:], 2), 21)
+            decode_decoded_enums(Marshalzone(*chunk), marshalzone_decode_mapping)
+            for chunk in islice(batched(values[16:], 2, strict=True), 21)
         ]
         decoded.append(list_of_marshal_zones)
 
-        for idx, item in enumerate(range(3)):
-            item = values[idx + 16 + 42]
-            decoded.append(item)
+        decoded.extend(values[idx + 16 + 42] for idx in range(3))
 
         list_of_weather = [
-            Weather(*chunk) for chunk in islice(batched(values[61:], 8), 64)
+            decode_decoded_enums(Weather(*chunk), weather_decode_mapping)
+            for chunk in islice(batched(values[61:], 8, strict=True), 64)
         ]
         decoded.append(list_of_weather)
 
-        for idx, item in enumerate(range(53)):
-            item = values[idx + 16 + 42 + 3 + 512]
-            decoded.append(item)
+        decoded.extend(values[idx + 16 + 42 + 3 + 512] for idx in range(53))
 
-        weekend_structure = [values[idx + 16 + 42 + 3 + 512 + 53] for idx in range(12)]
+        weekend_structure = [values[idx + 16 + 42 + 3 + 512 + 41] for idx in range(12)]
         decoded.append(weekend_structure)
         decoded.append(values[-2])
         decoded.append(values[-1])
 
-        return cls(*decoded)
+        _session = decode_decoded_enums(cls(*decoded), session_decode_mapping)
+        return {
+            k: (
+                str(v)
+                if k in ["season_link_id", "weekend_link_id", "session_link_id"]
+                else v
+            )
+            for k, v in _session.items()
+        }
 
 
 ## ---------------------- ##
@@ -264,18 +411,18 @@ class Carlap:
     safety_car_delta: float
     car_position: int
     current_lap_number: int
-    pit_status: int
+    pit_status: int | str
     number_of_pit_stops: int
-    sector: int
-    current_lap_invalid: int
+    sector: int | str
+    current_lap_invalid: int | str
     penalties: int
     total_warnings: int
     corner_cutting_warnings: int
     number_unserved_drive_through_pens: int
     number_unserved_stop_go_pens: int
     grid_position: int
-    driver_status: int
-    result_status: int
+    driver_status: int | str
+    result_status: int | str
     pit_lane_timer_active: int
     pit_lane_time_ms: int
     pit_lane_stop_time_ms: int
@@ -298,7 +445,7 @@ class LapdataPacket:
         number_of_repeats = 22
         decoded = []
         laps = [
-            Carlap(*chunk)
+            decode_decoded_enums(Carlap(*chunk), lapdata_decode_mapping)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(laps)
@@ -306,7 +453,7 @@ class LapdataPacket:
         decoded.append(values[(33 * 22) + 0])
         decoded.append(values[(33 * 22) + 1])
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## -------------------- ##
@@ -340,9 +487,8 @@ class EventPacket:
             return subclass._decode_payload(mem, payload_offset)
 
         # Simple events with no payload (SSTA, SEND, etc.)
-        return cls(code)
+        return asdict(cls(code))
 
-    @classmethod
     def _decode_payload(mem: memoryview, offset: int):
         # for subclasses that only have data
         raise NotImplementedError
@@ -359,7 +505,7 @@ class FastestLap(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -368,12 +514,14 @@ class Retirement(EventPacket):
     STRUCT: ClassVar[struct.Struct] = struct.Struct("<B B")  # carIdx, reason
 
     retired_car_id: int
-    retirement_reason: int
+    retirement_reason: int | str
 
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
-        values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        values = decode_dictionaries.retirementreason_dict[
+            cls.STRUCT.unpack_from(mem, offset)
+        ]
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -381,12 +529,14 @@ class DrsDisabled(EventPacket):
     event_code: ClassVar[str] = "DRSD"
     STRUCT: ClassVar[struct.Struct] = struct.Struct("<B")
 
-    reason: int
+    reason: int | str
 
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
-        (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        (val,) = decode_dictionaries.drsdeactivatedreason_dict[
+            cls.STRUCT.unpack_from(mem, offset)
+        ]
+        return asdict(cls(val))
 
 
 @dataclass
@@ -399,7 +549,7 @@ class Teammateinpit(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -412,7 +562,7 @@ class Racewinner(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -420,8 +570,8 @@ class Penalty(EventPacket):
     event_code: ClassVar[str] = "PENA"
     STRUCT: ClassVar[struct.Struct] = struct.Struct("<B B B B B B B")
 
-    penalty_type: int
-    infringement_type: int
+    penalty_type: int | str
+    infringement_type: int | str
     car_id_of_criminal: int
     car_id_of_victim: int
     time_gained: int
@@ -431,7 +581,7 @@ class Penalty(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return decode_decoded_enums(cls(*values), penalties_decode_mapping)
 
 
 @dataclass
@@ -449,7 +599,7 @@ class Speedtrap(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -462,7 +612,7 @@ class Startlights(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -475,7 +625,7 @@ class Drivethroughpenalty(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -488,7 +638,7 @@ class Stopgopenalty(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -502,7 +652,7 @@ class Flashback(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -515,7 +665,7 @@ class Buttonpressed(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return cls(val)
+        return asdict(cls(val))
 
 
 @dataclass
@@ -529,7 +679,7 @@ class Overtake(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -543,7 +693,7 @@ class Collision(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 @dataclass
@@ -551,13 +701,13 @@ class Safetycar(EventPacket):
     event_code: ClassVar[str] = "SCAR"
     STRUCT: ClassVar[struct.Struct] = struct.Struct("<B B")
 
-    safety_car_type: int
-    safety_car_status: int
+    safety_car_type: int | str
+    safety_car_status: int | str
 
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return decode_decoded_enums(cls(*values), safetycar_decode_mapping)
 
 
 ## --------------------------- ##
@@ -578,10 +728,10 @@ class Participant:
     race_number: int
     nationality: int
     name: str
-    network_telemetry_flag: int
+    network_telemetry_flag: int | str
     show_online_names: int
     f1_world_tech_level: int
-    platform: int
+    platform: int | str
     number_of_colours: int
     livery_red_1: int
     livery_green_1: int
@@ -610,12 +760,21 @@ class ParticipantsPacket:
         length_of_data = 25
         number_of_repeats = 22
         participants = [
-            Participant(*chunk)
-            for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
+            decode_decoded_enums(Participant(*chunk), participants_decode_mapping)
+            for chunk in islice(
+                batched(values[1:], length_of_data, strict=True), number_of_repeats
+            )
+        ]
+        participants = [
+            {
+                k: (v.decode("utf-8").rstrip("\x00") if isinstance(v, bytes) else v)
+                for participant in participants
+                for k, v in participant.items()
+            }
         ]
         decoded.append(participants)
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------ ##
@@ -666,13 +825,13 @@ class SetupPacket:
         length_of_data = 23
         number_of_repeats = 22
         setups = [
-            Setup(*chunk)
+            asdict(Setup(*chunk))
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
         decoded.append(values[-1])
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ---------------------------- ##
@@ -694,7 +853,7 @@ class Telemetry:
     clutch: int
     gear: int
     engine_rpm: int
-    drs: int
+    drs: int | str
     rev_lights_percent: int
     rev_lights_bit_value: int
     brakes_rl_temperature: int
@@ -735,15 +894,17 @@ class TelemetryPacket:
         length_of_data = 31
         number_of_repeats = 22
         setups = [
-            Telemetry(*chunk)
-            for chunk in islice(batched(values, length_of_data), number_of_repeats)
+            decode_decoded_enums(Telemetry(*chunk), telemetry_decode_mapping)
+            for chunk in islice(
+                batched(values, length_of_data, strict=True), number_of_repeats
+            )
         ]
         decoded.append(setups)
         decoded.append(values[-3])
         decoded.append(values[-2])
         decoded.append(values[-1])
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------- ##
@@ -756,27 +917,27 @@ CARSTATUS_STRUCT = struct.Struct("<" + "BBBBBfffHHBBHBBBbfffBfffB" * 22)
 
 @dataclass
 class Status:
-    traction_control: int
-    anti_lock_brakes: int
-    fuel_mix: int
+    traction_control: int | str
+    anti_lock_brakes: int | str
+    fuel_mix: int | str
     front_brake_bias: int
-    pit_limiter_status: int
+    pit_limiter_status: int | str
     current_fuel_in_tank_kg: float
     fuel_capacity: float
     fuel_remaining_laps: float
     max_rpm: int
     idle_rpm: int
     max_gears: int
-    drs_allowed: int
+    drs_allowed: int | str
     drs_activated_in_distance: int
-    actual_tyre_compound: int
-    visual_tyre_compound: int
+    actual_tyre_compound: int | str
+    visual_tyre_compound: int | str
     tyre_age_laps: int
-    vehicle_flags_shown: int
+    vehicle_flags_shown: int | str
     engine_power_ice: float
     engine_power_mguk: float
     ers_store_energy: float
-    ers_deploy_mode: int
+    ers_deploy_mode: int | str
     ers_harvested_mguk: float
     ers_harvested_mgu_h: float
     ers_deployed_this_lap: float
@@ -795,12 +956,12 @@ class StatusPacket:
         length_of_data = 25
         number_of_repeats = 22
         setups = [
-            Status(*chunk)
+            decode_decoded_enums(Status(*chunk), status_decode_mapping)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ----------------------------------- ##
@@ -818,8 +979,8 @@ class Classification:
     grid_position: int
     points: int
     num_pit_stops: int
-    result_status: int
-    result_reason: int
+    result_status: int | str
+    result_reason: int | str
     best_lap_time_in_ms: int
     total_race_time: float
     penalties_time: int
@@ -864,12 +1025,12 @@ class ClassificationPacket:
         length_of_data = 36
         number_of_repeats = 22
         cars = [
-            Classification(*chunk)
+            decode_decoded_enums(Classification(*chunk), classification_decode_mapping)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(cars)
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------- ##
@@ -883,15 +1044,15 @@ LOBBYINFO_STRUCT = struct.Struct("<B" + "BBBB32sBBBHB" * 22)
 @dataclass
 class Lobby:
     ai_controlled: int
-    team_id: int
-    nationality: int
-    platform: int
+    team_id: int | str
+    nationality: int | str
+    platform: int | str
     name: str
     car_number: int
-    your_telemetry: int
-    show_online_names: int
+    your_telemetry: int | str
+    show_online_names: int | str
     f1_world_tech_level: int
-    ready_status: int
+    ready_status: int | str
 
 
 @dataclass
@@ -907,12 +1068,12 @@ class LobbyPacket:
         length_of_data = 43
         number_of_repeats = 22
         setups = [
-            Lobby(*chunk)
+            decode_decoded_enums(Lobby(*chunk), lobby_decode_mapping)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
 
-        return cls(decoded)
+        return asdict(cls(decoded))
 
 
 ## ------------------------- ##
@@ -947,8 +1108,8 @@ class Damage:
     floor_damage_percentage: int
     diffuser_damage_percentage: int
     sidepod_damage_percentage: int
-    drs_fault: int
-    ers_fault: int
+    drs_fault: int | str
+    ers_fault: int | str
     gearbox_damage_percentage: int
     engine_damage_percentage: int
     engine_mguh_wear_percentage: int
@@ -957,8 +1118,8 @@ class Damage:
     engine_ice_wear_percentage: int
     engine_mguk_wear_percentage: int
     engine_tc_wear_percentage: int
-    engine_blown: int
-    engine_seized: int
+    engine_blown: int | str
+    engine_seized: int | str
 
 
 @dataclass
@@ -973,12 +1134,12 @@ class DamagePacket:
         length_of_data = 34
         number_of_repeats = 22
         setups = [
-            Damage(*chunk)
+            decode_decoded_enums(Damage(*chunk), damage_decode_mapping)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------------ ##
@@ -1028,7 +1189,7 @@ class SessionHistoryPacket:
         length_of_laps = 8
         number_of_laps = 100
         laps = [
-            LapHistory(*chunk)
+            asdict(LapHistory(*chunk))
             for chunk in islice(batched(values[7:], length_of_laps), number_of_laps)
         ]
         decoded.append(laps)
@@ -1036,11 +1197,11 @@ class SessionHistoryPacket:
         length_of_tyres = 3
         number_of_tyres = 8
         tyres = [
-            TyreHistory(*chunk)
+            asdict(TyreHistory(*chunk))
             for chunk in islice(batched(values[807:], length_of_tyres), number_of_tyres)
         ]
         decoded.append(tyres)
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------ ##
@@ -1053,8 +1214,8 @@ TYRESETS_STRUCT = struct.Struct("<B" + "BBBBBBBhB" * 20 + "B")
 
 @dataclass
 class TyreSets:
-    actual_tyre_compound: int
-    visual_tyre_compound: int
+    actual_tyre_compound: int | str
+    visual_tyre_compound: int | str
     wear: int
     available: int
     recommended_session: int
@@ -1078,13 +1239,13 @@ class TyreSetsPacket:
         length_of_data = 9
         number_of_repeats = 20
         setups = [
-            TyreSets(*chunk)
+            asdict(TyreSets(*chunk))
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
         decoded.append(values[-1])
 
-        return cls(*decoded)
+        return asdict(cls(*decoded))
 
 
 ## ------------------------------ ##
@@ -1096,7 +1257,7 @@ EXTENDEDMOTION_STRUCT = struct.Struct("<" + "f" * 61)
 
 
 @dataclass
-class ExMotion:
+class ExMotionPacket:
     suspension_rl_position: float
     suspension_rr_position: float
     suspension_fl_position: float
@@ -1163,7 +1324,7 @@ class ExMotion:
     def decode(cls, packet: bytes, offset: int = 29):
         mem = memoryview(packet)
         values = EXTENDEDMOTION_STRUCT.unpack_from(mem, offset)
-        return cls(*values)
+        return asdict(cls(*values))
 
 
 ## ------------------------- ##
@@ -1207,7 +1368,7 @@ class TimeTrialPacket:
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
 
-        return cls(*setups)
+        return asdict(cls(*setups))
 
 
 ## ------------------------------- ##
@@ -1229,12 +1390,14 @@ class LapPositionPacket:
         mem = memoryview(packet)
         values = LAPPOSITION_STRUCT.unpack_from(mem, offset)
         decoded = []
+        decoded.append(values[0])
+        decoded.append(values[1])
         length_of_data = 50
         number_of_repeats = 22
         cars = [
-            list(*chunk)
-            for chunk in islice(batched(values, length_of_data), number_of_repeats)
+            ",".join(str(list(chunk)))
+            for chunk in islice(batched(values[2:], length_of_data), number_of_repeats)
         ]
         decoded.append(cars)
 
-        return cls(decoded)
+        return asdict(cls(*decoded))

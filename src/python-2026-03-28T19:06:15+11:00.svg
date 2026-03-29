@@ -1,0 +1,491 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" width="1200" height="394" onload="init(evt)" viewBox="0 0 1200 394" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fg="http://github.com/jonhoo/inferno"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: --><defs><linearGradient id="background" y1="0" y2="1" x1="0" x2="0"><stop stop-color="#eeeeee" offset="5%"/><stop stop-color="#eeeeb0" offset="95%"/></linearGradient></defs><style type="text/css">
+text { font-family:monospace; font-size:12px }
+#title { text-anchor:middle; font-size:17px; }
+#matched { text-anchor:end; }
+#search { text-anchor:end; opacity:0.1; cursor:pointer; }
+#search:hover, #search.show { opacity:1; }
+#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+#unzoom { cursor:pointer; }
+#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+.hide { display:none; }
+.parent { opacity:0.5; }
+</style><script type="text/ecmascript"><![CDATA[
+        var nametype = 'Function:';
+        var fontsize = 12;
+        var fontwidth = 0.59;
+        var xpad = 10;
+        var inverted = true;
+        var searchcolor = 'rgb(230,0,230)';
+        var fluiddrawing = true;
+        var truncate_text_right = false;
+    ]]><![CDATA["use strict";
+var details, searchbtn, unzoombtn, matchedtxt, svg, searching, frames, known_font_width;
+function init(evt) {
+    details = document.getElementById("details").firstChild;
+    searchbtn = document.getElementById("search");
+    unzoombtn = document.getElementById("unzoom");
+    matchedtxt = document.getElementById("matched");
+    svg = document.getElementsByTagName("svg")[0];
+    frames = document.getElementById("frames");
+    known_font_width = get_monospace_width(frames);
+    total_samples = parseInt(frames.attributes.total_samples.value);
+    searching = 0;
+
+    // Use GET parameters to restore a flamegraph's state.
+    var restore_state = function() {
+        var params = get_params();
+        if (params.x && params.y)
+            zoom(find_group(document.querySelector('[*|x="' + params.x + '"][y="' + params.y + '"]')));
+        if (params.s)
+            search(params.s);
+    };
+
+    if (fluiddrawing) {
+        // Make width dynamic so the SVG fits its parent's width.
+        svg.removeAttribute("width");
+        // Edge requires us to have a viewBox that gets updated with size changes.
+        var isEdge = /Edge\/\d./i.test(navigator.userAgent);
+        if (!isEdge) {
+            svg.removeAttribute("viewBox");
+        }
+        var update_for_width_change = function() {
+            if (isEdge) {
+                svg.attributes.viewBox.value = "0 0 " + svg.width.baseVal.value + " " + svg.height.baseVal.value;
+            }
+
+            // Keep consistent padding on left and right of frames container.
+            frames.attributes.width.value = svg.width.baseVal.value - xpad * 2;
+
+            // Text truncation needs to be adjusted for the current width.
+            update_text_for_elements(frames.children);
+
+            // Keep search elements at a fixed distance from right edge.
+            var svgWidth = svg.width.baseVal.value;
+            searchbtn.attributes.x.value = svgWidth - xpad;
+            matchedtxt.attributes.x.value = svgWidth - xpad;
+        };
+        window.addEventListener('resize', function() {
+            update_for_width_change();
+        });
+        // This needs to be done asynchronously for Safari to work.
+        setTimeout(function() {
+            unzoom();
+            update_for_width_change();
+            restore_state();
+        }, 0);
+    } else {
+        restore_state();
+    }
+}
+// event listeners
+window.addEventListener("click", function(e) {
+    var target = find_group(e.target);
+    if (target) {
+        if (target.nodeName == "a") {
+            if (e.ctrlKey === false) return;
+            e.preventDefault();
+        }
+        if (target.classList.contains("parent")) unzoom();
+        zoom(target);
+
+        // set parameters for zoom state
+        var el = target.querySelector("rect");
+        if (el && el.attributes && el.attributes.y && el.attributes["fg:x"]) {
+            var params = get_params()
+            params.x = el.attributes["fg:x"].value;
+            params.y = el.attributes.y.value;
+            history.replaceState(null, null, parse_params(params));
+        }
+    }
+    else if (e.target.id == "unzoom") {
+        unzoom();
+
+        // remove zoom state
+        var params = get_params();
+        if (params.x) delete params.x;
+        if (params.y) delete params.y;
+        history.replaceState(null, null, parse_params(params));
+    }
+    else if (e.target.id == "search") search_prompt();
+}, false)
+// mouse-over for info
+// show
+window.addEventListener("mouseover", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = nametype + " " + g_to_text(target);
+}, false)
+// clear
+window.addEventListener("mouseout", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = ' ';
+}, false)
+// ctrl-F for search
+window.addEventListener("keydown",function (e) {
+    if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+        e.preventDefault();
+        search_prompt();
+    }
+}, false)
+// functions
+function get_params() {
+    var params = {};
+    var paramsarr = window.location.search.substr(1).split('&');
+    for (var i = 0; i < paramsarr.length; ++i) {
+        var tmp = paramsarr[i].split("=");
+        if (!tmp[0] || !tmp[1]) continue;
+        params[tmp[0]]  = decodeURIComponent(tmp[1]);
+    }
+    return params;
+}
+function parse_params(params) {
+    var uri = "?";
+    for (var key in params) {
+        uri += key + '=' + encodeURIComponent(params[key]) + '&';
+    }
+    if (uri.slice(-1) == "&")
+        uri = uri.substring(0, uri.length - 1);
+    if (uri == '?')
+        uri = window.location.href.split('?')[0];
+    return uri;
+}
+function find_child(node, selector) {
+    var children = node.querySelectorAll(selector);
+    if (children.length) return children[0];
+    return;
+}
+function find_group(node) {
+    var parent = node.parentElement;
+    if (!parent) return;
+    if (parent.id == "frames") return node;
+    return find_group(parent);
+}
+function orig_save(e, attr, val) {
+    if (e.attributes["fg:orig_" + attr] != undefined) return;
+    if (e.attributes[attr] == undefined) return;
+    if (val == undefined) val = e.attributes[attr].value;
+    e.setAttribute("fg:orig_" + attr, val);
+}
+function orig_load(e, attr) {
+    if (e.attributes["fg:orig_"+attr] == undefined) return;
+    e.attributes[attr].value = e.attributes["fg:orig_" + attr].value;
+    e.removeAttribute("fg:orig_" + attr);
+}
+function g_to_text(e) {
+    var text = find_child(e, "title").firstChild.nodeValue;
+    return (text)
+}
+function g_to_func(e) {
+    var func = g_to_text(e);
+    // if there's any manipulation we want to do to the function
+    // name before it's searched, do it here before returning.
+    return (func);
+}
+function get_monospace_width(frames) {
+    // Given the id="frames" element, return the width of text characters if
+    // this is a monospace font, otherwise return 0.
+    text = find_child(frames.children[0], "text");
+    originalContent = text.textContent;
+    text.textContent = "!";
+    bangWidth = text.getComputedTextLength();
+    text.textContent = "W";
+    wWidth = text.getComputedTextLength();
+    text.textContent = originalContent;
+    if (bangWidth === wWidth) {
+        return bangWidth;
+    } else {
+        return 0;
+    }
+}
+function update_text_for_elements(elements) {
+    // In order to render quickly in the browser, you want to do one pass of
+    // reading attributes, and one pass of mutating attributes. See
+    // https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/ for details.
+
+    // Fall back to inefficient calculation, if we're variable-width font.
+    // TODO This should be optimized somehow too.
+    if (known_font_width === 0) {
+        for (var i = 0; i < elements.length; i++) {
+            update_text(elements[i]);
+        }
+        return;
+    }
+
+    var textElemNewAttributes = [];
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var r = find_child(e, "rect");
+        var t = find_child(e, "text");
+        var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+        var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+        var newX = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+        // Smaller than this size won't fit anything
+        if (w < 2 * known_font_width) {
+            textElemNewAttributes.push([newX, ""]);
+            continue;
+        }
+
+        // Fit in full text width
+        if (txt.length * known_font_width < w) {
+            textElemNewAttributes.push([newX, txt]);
+            continue;
+        }
+
+        var substringLength = Math.floor(w / known_font_width) - 2;
+        if (truncate_text_right) {
+            // Truncate the right side of the text.
+            textElemNewAttributes.push([newX, txt.substring(0, substringLength) + ".."]);
+            continue;
+        } else {
+            // Truncate the left side of the text.
+            textElemNewAttributes.push([newX, ".." + txt.substring(txt.length - substringLength, txt.length)]);
+            continue;
+        }
+    }
+
+    console.assert(textElemNewAttributes.length === elements.length, "Resize failed, please file a bug at https://github.com/jonhoo/inferno/");
+
+    // Now that we know new textContent, set it all in one go so we don't refresh a bazillion times.
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var values = textElemNewAttributes[i];
+        var t = find_child(e, "text");
+        t.attributes.x.value = values[0];
+        t.textContent = values[1];
+    }
+}
+
+function update_text(e) {
+    var r = find_child(e, "rect");
+    var t = find_child(e, "text");
+    var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+    var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+    t.attributes.x.value = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+    // Smaller than this size won't fit anything
+    if (w < 2 * fontsize * fontwidth) {
+        t.textContent = "";
+        return;
+    }
+    t.textContent = txt;
+    // Fit in full text width
+    if (t.getComputedTextLength() < w)
+        return;
+    if (truncate_text_right) {
+        // Truncate the right side of the text.
+        for (var x = txt.length - 2; x > 0; x--) {
+            if (t.getSubStringLength(0, x + 2) <= w) {
+                t.textContent = txt.substring(0, x) + "..";
+                return;
+            }
+        }
+    } else {
+        // Truncate the left side of the text.
+        for (var x = 2; x < txt.length; x++) {
+            if (t.getSubStringLength(x - 2, txt.length) <= w) {
+                t.textContent = ".." + txt.substring(x, txt.length);
+                return;
+            }
+        }
+    }
+    t.textContent = "";
+}
+// zoom
+function zoom_reset(e) {
+    if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * parseInt(e.attributes["fg:x"].value) / total_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / total_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_reset(c[i]);
+    }
+}
+function zoom_child(e, x, zoomed_width_samples) {
+    if (e.tagName == "text") {
+        var parent_x = parseFloat(find_child(e.parentNode, "rect[x]").attributes.x.value);
+        e.attributes.x.value = format_percent(parent_x + (100 * 3 / frames.attributes.width.value));
+    } else if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * (parseInt(e.attributes["fg:x"].value) - x) / zoomed_width_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / zoomed_width_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_child(c[i], x, zoomed_width_samples);
+    }
+}
+function zoom_parent(e) {
+    if (e.attributes) {
+        if (e.attributes.x != undefined) {
+            e.attributes.x.value = "0.0%";
+        }
+        if (e.attributes.width != undefined) {
+            e.attributes.width.value = "100.0%";
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_parent(c[i]);
+    }
+}
+function zoom(node) {
+    var attr = find_child(node, "rect").attributes;
+    var width = parseInt(attr["fg:w"].value);
+    var xmin = parseInt(attr["fg:x"].value);
+    var xmax = xmin + width;
+    var ymin = parseFloat(attr.y.value);
+    unzoombtn.classList.remove("hide");
+    var el = frames.children;
+    var to_update_text = [];
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var a = find_child(e, "rect").attributes;
+        var ex = parseInt(a["fg:x"].value);
+        var ew = parseInt(a["fg:w"].value);
+        // Is it an ancestor
+        if (!inverted) {
+            var upstack = parseFloat(a.y.value) > ymin;
+        } else {
+            var upstack = parseFloat(a.y.value) < ymin;
+        }
+        if (upstack) {
+            // Direct ancestor
+            if (ex <= xmin && (ex+ew) >= xmax) {
+                e.classList.add("parent");
+                zoom_parent(e);
+                to_update_text.push(e);
+            }
+            // not in current path
+            else
+                e.classList.add("hide");
+        }
+        // Children maybe
+        else {
+            // no common path
+            if (ex < xmin || ex >= xmax) {
+                e.classList.add("hide");
+            }
+            else {
+                zoom_child(e, xmin, width);
+                to_update_text.push(e);
+            }
+        }
+    }
+    update_text_for_elements(to_update_text);
+}
+function unzoom() {
+    unzoombtn.classList.add("hide");
+    var el = frames.children;
+    for(var i = 0; i < el.length; i++) {
+        el[i].classList.remove("parent");
+        el[i].classList.remove("hide");
+        zoom_reset(el[i]);
+    }
+    update_text_for_elements(el);
+}
+// search
+function reset_search() {
+    var el = document.querySelectorAll("#frames rect");
+    for (var i = 0; i < el.length; i++) {
+        orig_load(el[i], "fill")
+    }
+    var params = get_params();
+    delete params.s;
+    history.replaceState(null, null, parse_params(params));
+}
+function search_prompt() {
+    if (!searching) {
+        var term = prompt("Enter a search term (regexp " +
+            "allowed, eg: ^ext4_)", "");
+        if (term != null) {
+            search(term)
+        }
+    } else {
+        reset_search();
+        searching = 0;
+        searchbtn.classList.remove("show");
+        searchbtn.firstChild.nodeValue = "Search"
+        matchedtxt.classList.add("hide");
+        matchedtxt.firstChild.nodeValue = ""
+    }
+}
+function search(term) {
+    var re = new RegExp(term);
+    var el = frames.children;
+    var matches = new Object();
+    var maxwidth = 0;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        // Skip over frames which are either not visible, or below the zoomed-to frame
+        if (e.classList.contains("hide") || e.classList.contains("parent")) {
+            continue;
+        }
+        var func = g_to_func(e);
+        var rect = find_child(e, "rect");
+        if (func == null || rect == null)
+            continue;
+        // Save max width. Only works as we have a root frame
+        var w = parseInt(rect.attributes["fg:w"].value);
+        if (w > maxwidth)
+            maxwidth = w;
+        if (func.match(re)) {
+            // highlight
+            var x = parseInt(rect.attributes["fg:x"].value);
+            orig_save(rect, "fill");
+            rect.attributes.fill.value = searchcolor;
+            // remember matches
+            if (matches[x] == undefined) {
+                matches[x] = w;
+            } else {
+                if (w > matches[x]) {
+                    // overwrite with parent
+                    matches[x] = w;
+                }
+            }
+            searching = 1;
+        }
+    }
+    if (!searching)
+        return;
+    var params = get_params();
+    params.s = term;
+    history.replaceState(null, null, parse_params(params));
+
+    searchbtn.classList.add("show");
+    searchbtn.firstChild.nodeValue = "Reset Search";
+    // calculate percent matched, excluding vertical overlap
+    var count = 0;
+    var lastx = -1;
+    var lastw = 0;
+    var keys = Array();
+    for (k in matches) {
+        if (matches.hasOwnProperty(k))
+            keys.push(k);
+    }
+    // sort the matched frames by their x location
+    // ascending, then width descending
+    keys.sort(function(a, b){
+        return a - b;
+    });
+    // Step through frames saving only the biggest bottom-up frames
+    // thanks to the sort order. This relies on the tree property
+    // where children are always smaller than their parents.
+    for (var k in keys) {
+        var x = parseInt(keys[k]);
+        var w = matches[keys[k]];
+        if (x >= lastx + lastw) {
+            count += w;
+            lastx = x;
+            lastw = w;
+        }
+    }
+    // display matched percent
+    matchedtxt.classList.remove("hide");
+    var pct = 100 * count / maxwidth;
+    if (pct != 100) pct = pct.toFixed(1);
+    matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+}
+function format_percent(n) {
+    return n.toFixed(4) + "%";
+}
+]]></script><rect x="0" y="0" width="100%" height="394" fill="url(#background)"/><text id="title" fill="rgb(0,0,0)" x="50.0000%" y="24.00">py-spy record --full-filenames --rate 1000 --subprocesses --function -- python utils/udp_processor.py</text><text id="details" fill="rgb(0,0,0)" x="10" y="40.00"> </text><text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="24.00">Reset Zoom</text><text id="search" fill="rgb(0,0,0)" x="1190" y="24.00">Search</text><text id="matched" fill="rgb(0,0,0)" x="1190" y="383.00"> </text><svg id="frames" x="10" width="1180" total_samples="711388"><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (19,947 samples, 2.80%)</title><rect x="0.9278%" y="228" width="2.8040%" height="15" fill="rgb(227,0,7)" fg:x="6600" fg:w="19947"/><text x="1.1778%" y="238.50">__..</text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (19,821 samples, 2.79%)</title><rect x="0.9455%" y="244" width="2.7862%" height="15" fill="rgb(217,0,24)" fg:x="6726" fg:w="19821"/><text x="1.1955%" y="254.50">hi..</text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (19,815 samples, 2.79%)</title><rect x="0.9463%" y="260" width="2.7854%" height="15" fill="rgb(221,193,54)" fg:x="6732" fg:w="19815"/><text x="1.1963%" y="270.50">hi..</text></g><g><title>_ansi_tokenize (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:28) (1,129 samples, 0.16%)</title><rect x="4.2794%" y="340" width="0.1587%" height="15" fill="rgb(248,212,6)" fg:x="30443" fg:w="1129"/><text x="4.5294%" y="350.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (6,322 samples, 0.89%)</title><rect x="4.0209%" y="276" width="0.8887%" height="15" fill="rgb(208,68,35)" fg:x="28604" fg:w="6322"/><text x="4.2709%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (6,241 samples, 0.88%)</title><rect x="4.0323%" y="292" width="0.8773%" height="15" fill="rgb(232,128,0)" fg:x="28685" fg:w="6241"/><text x="4.2823%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (6,184 samples, 0.87%)</title><rect x="4.0403%" y="308" width="0.8693%" height="15" fill="rgb(207,160,47)" fg:x="28742" fg:w="6184"/><text x="4.2903%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (5,886 samples, 0.83%)</title><rect x="4.0822%" y="324" width="0.8274%" height="15" fill="rgb(228,23,34)" fg:x="29040" fg:w="5886"/><text x="4.3322%" y="334.50"></text></g><g><title>append (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:964) (3,354 samples, 0.47%)</title><rect x="4.4381%" y="340" width="0.4715%" height="15" fill="rgb(218,30,26)" fg:x="31572" fg:w="3354"/><text x="4.6881%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (2,764 samples, 0.39%)</title><rect x="4.5210%" y="356" width="0.3885%" height="15" fill="rgb(220,122,19)" fg:x="32162" fg:w="2764"/><text x="4.7710%" y="366.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (8,380 samples, 1.18%)</title><rect x="3.7317%" y="228" width="1.1780%" height="15" fill="rgb(250,228,42)" fg:x="26547" fg:w="8380"/><text x="3.9817%" y="238.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (8,348 samples, 1.17%)</title><rect x="3.7362%" y="244" width="1.1735%" height="15" fill="rgb(240,193,28)" fg:x="26579" fg:w="8348"/><text x="3.9862%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (6,532 samples, 0.92%)</title><rect x="3.9915%" y="260" width="0.9182%" height="15" fill="rgb(216,20,37)" fg:x="28395" fg:w="6532"/><text x="4.2415%" y="270.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:489) (1,163 samples, 0.16%)</title><rect x="4.9472%" y="260" width="0.1635%" height="15" fill="rgb(206,188,39)" fg:x="35194" fg:w="1163"/><text x="5.1972%" y="270.50"></text></g><g><title>__str__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:552) (1,073 samples, 0.15%)</title><rect x="4.9599%" y="276" width="0.1508%" height="15" fill="rgb(217,207,13)" fg:x="35284" fg:w="1073"/><text x="5.2099%" y="286.50"></text></g><g><title>expand (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:519) (844 samples, 0.12%)</title><rect x="5.1170%" y="260" width="0.1186%" height="15" fill="rgb(231,73,38)" fg:x="36402" fg:w="844"/><text x="5.3670%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:467) (2,383 samples, 0.33%)</title><rect x="4.9173%" y="244" width="0.3350%" height="15" fill="rgb(225,20,46)" fg:x="34981" fg:w="2383"/><text x="5.1673%" y="254.50"></text></g><g><title>_safe_isinstance (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:161) (1,065 samples, 0.15%)</title><rect x="5.7440%" y="292" width="0.1497%" height="15" fill="rgb(210,31,41)" fg:x="40862" fg:w="1065"/><text x="5.9940%" y="302.50"></text></g><g><title>inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/typing.py:426) (1,396 samples, 0.20%)</title><rect x="5.8937%" y="292" width="0.1962%" height="15" fill="rgb(221,200,47)" fg:x="41927" fg:w="1396"/><text x="6.1437%" y="302.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (5,835 samples, 0.82%)</title><rect x="5.3359%" y="276" width="0.8202%" height="15" fill="rgb(226,26,5)" fg:x="37959" fg:w="5835"/><text x="5.5859%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (37,565 samples, 5.28%)</title><rect x="0.9141%" y="212" width="5.2805%" height="15" fill="rgb(249,33,26)" fg:x="6503" fg:w="37565"/><text x="1.1641%" y="222.50">__rich..</text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (9,141 samples, 1.28%)</title><rect x="4.9097%" y="228" width="1.2850%" height="15" fill="rgb(235,183,28)" fg:x="34927" fg:w="9141"/><text x="5.1597%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (6,704 samples, 0.94%)</title><rect x="5.2523%" y="244" width="0.9424%" height="15" fill="rgb(221,5,38)" fg:x="37364" fg:w="6704"/><text x="5.5023%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (6,695 samples, 0.94%)</title><rect x="5.2535%" y="260" width="0.9411%" height="15" fill="rgb(247,18,42)" fg:x="37373" fg:w="6695"/><text x="5.5035%" y="270.50"></text></g><g><title>get_current_style (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:758) (732 samples, 0.10%)</title><rect x="6.4405%" y="260" width="0.1029%" height="15" fill="rgb(241,131,45)" fg:x="45817" fg:w="732"/><text x="6.6905%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:719) (2,022 samples, 0.28%)</title><rect x="6.2752%" y="244" width="0.2842%" height="15" fill="rgb(249,31,29)" fg:x="44641" fg:w="2022"/><text x="6.5252%" y="254.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (742 samples, 0.10%)</title><rect x="6.6043%" y="260" width="0.1043%" height="15" fill="rgb(225,111,53)" fg:x="46982" fg:w="742"/><text x="6.8543%" y="270.50"></text></g><g><title>__init__ (__init__) (1,492 samples, 0.21%)</title><rect x="7.1055%" y="292" width="0.2097%" height="15" fill="rgb(238,160,17)" fg:x="50548" fg:w="1492"/><text x="7.3555%" y="302.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/containers.py:69) (1,492 samples, 0.21%)</title><rect x="7.1055%" y="308" width="0.2097%" height="15" fill="rgb(214,148,48)" fg:x="50548" fg:w="1492"/><text x="7.3555%" y="318.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1129) (1,477 samples, 0.21%)</title><rect x="7.1077%" y="324" width="0.2076%" height="15" fill="rgb(232,36,49)" fg:x="50563" fg:w="1477"/><text x="7.3577%" y="334.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:144) (1,132 samples, 0.16%)</title><rect x="7.1562%" y="340" width="0.1591%" height="15" fill="rgb(209,103,24)" fg:x="50908" fg:w="1132"/><text x="7.4062%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (762 samples, 0.11%)</title><rect x="7.2082%" y="356" width="0.1071%" height="15" fill="rgb(229,88,8)" fg:x="51278" fg:w="762"/><text x="7.4582%" y="366.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (3,400 samples, 0.48%)</title><rect x="6.8497%" y="276" width="0.4779%" height="15" fill="rgb(213,181,19)" fg:x="48728" fg:w="3400"/><text x="7.0997%" y="286.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (3,544 samples, 0.50%)</title><rect x="6.8296%" y="260" width="0.4982%" height="15" fill="rgb(254,191,54)" fg:x="48585" fg:w="3544"/><text x="7.0796%" y="270.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (8,024 samples, 1.13%)</title><rect x="6.2135%" y="228" width="1.1279%" height="15" fill="rgb(241,83,37)" fg:x="44202" fg:w="8024"/><text x="6.4635%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (5,563 samples, 0.78%)</title><rect x="6.5594%" y="244" width="0.7820%" height="15" fill="rgb(233,36,39)" fg:x="46663" fg:w="5563"/><text x="6.8094%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (8,163 samples, 1.15%)</title><rect x="6.1949%" y="212" width="1.1475%" height="15" fill="rgb(226,3,54)" fg:x="44070" fg:w="8163"/><text x="6.4449%" y="222.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (45,750 samples, 6.43%)</title><rect x="0.9123%" y="196" width="6.4311%" height="15" fill="rgb(245,192,40)" fg:x="6490" fg:w="45750"/><text x="1.1623%" y="206.50">render (..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (46,687 samples, 6.56%)</title><rect x="0.8416%" y="164" width="6.5628%" height="15" fill="rgb(238,167,29)" fg:x="5987" fg:w="46687"/><text x="1.0916%" y="174.50">print (/h..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (46,637 samples, 6.56%)</title><rect x="0.8486%" y="180" width="6.5558%" height="15" fill="rgb(232,182,51)" fg:x="6037" fg:w="46637"/><text x="1.0986%" y="190.50">print (/h..</text></g><g><title>handle_damage (/home/wynand/git/simba/src/utils/udp_to_influx.py:180) (47,616 samples, 6.69%)</title><rect x="0.7114%" y="132" width="6.6934%" height="15" fill="rgb(231,60,39)" fg:x="5061" fg:w="47616"/><text x="0.9614%" y="142.50">handle_da..</text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (47,253 samples, 6.64%)</title><rect x="0.7625%" y="148" width="6.6424%" height="15" fill="rgb(208,69,12)" fg:x="5424" fg:w="47253"/><text x="1.0125%" y="158.50">update_ca..</text></g><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (20,271 samples, 2.85%)</title><rect x="7.6384%" y="228" width="2.8495%" height="15" fill="rgb(235,93,37)" fg:x="54339" fg:w="20271"/><text x="7.8884%" y="238.50">__..</text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (20,133 samples, 2.83%)</title><rect x="7.6578%" y="244" width="2.8301%" height="15" fill="rgb(213,116,39)" fg:x="54477" fg:w="20133"/><text x="7.9078%" y="254.50">hi..</text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (20,125 samples, 2.83%)</title><rect x="7.6590%" y="260" width="2.8290%" height="15" fill="rgb(222,207,29)" fg:x="54485" fg:w="20125"/><text x="7.9090%" y="270.50">hi..</text></g><g><title>_ansi_tokenize (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:28) (1,216 samples, 0.17%)</title><rect x="11.1110%" y="340" width="0.1709%" height="15" fill="rgb(206,96,30)" fg:x="79042" fg:w="1216"/><text x="11.3610%" y="350.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (9,420 samples, 1.32%)</title><rect x="10.4879%" y="228" width="1.3242%" height="15" fill="rgb(218,138,4)" fg:x="74610" fg:w="9420"/><text x="10.7379%" y="238.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (9,385 samples, 1.32%)</title><rect x="10.4929%" y="244" width="1.3193%" height="15" fill="rgb(250,191,14)" fg:x="74645" fg:w="9385"/><text x="10.7429%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (7,388 samples, 1.04%)</title><rect x="10.7736%" y="260" width="1.0385%" height="15" fill="rgb(239,60,40)" fg:x="76642" fg:w="7388"/><text x="11.0236%" y="270.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (7,145 samples, 1.00%)</title><rect x="10.8077%" y="276" width="1.0044%" height="15" fill="rgb(206,27,48)" fg:x="76885" fg:w="7145"/><text x="11.0577%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (7,046 samples, 0.99%)</title><rect x="10.8217%" y="292" width="0.9905%" height="15" fill="rgb(225,35,8)" fg:x="76984" fg:w="7046"/><text x="11.0717%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (6,989 samples, 0.98%)</title><rect x="10.8297%" y="308" width="0.9824%" height="15" fill="rgb(250,213,24)" fg:x="77041" fg:w="6989"/><text x="11.0797%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (6,651 samples, 0.93%)</title><rect x="10.8772%" y="324" width="0.9349%" height="15" fill="rgb(247,123,22)" fg:x="77379" fg:w="6651"/><text x="11.1272%" y="334.50"></text></g><g><title>append (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:964) (3,772 samples, 0.53%)</title><rect x="11.2819%" y="340" width="0.5302%" height="15" fill="rgb(231,138,38)" fg:x="80258" fg:w="3772"/><text x="11.5319%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (3,110 samples, 0.44%)</title><rect x="11.3749%" y="356" width="0.4372%" height="15" fill="rgb(231,145,46)" fg:x="80920" fg:w="3110"/><text x="11.6249%" y="366.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:489) (1,230 samples, 0.17%)</title><rect x="11.8533%" y="260" width="0.1729%" height="15" fill="rgb(251,118,11)" fg:x="84323" fg:w="1230"/><text x="12.1033%" y="270.50"></text></g><g><title>__str__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:552) (1,156 samples, 0.16%)</title><rect x="11.8637%" y="276" width="0.1625%" height="15" fill="rgb(217,147,25)" fg:x="84397" fg:w="1156"/><text x="12.1137%" y="286.50"></text></g><g><title>expand (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:519) (937 samples, 0.13%)</title><rect x="12.0332%" y="260" width="0.1317%" height="15" fill="rgb(247,81,37)" fg:x="85603" fg:w="937"/><text x="12.2832%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:467) (2,590 samples, 0.36%)</title><rect x="11.8193%" y="244" width="0.3641%" height="15" fill="rgb(209,12,38)" fg:x="84081" fg:w="2590"/><text x="12.0693%" y="254.50"></text></g><g><title>_safe_isinstance (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:161) (1,142 samples, 0.16%)</title><rect x="12.6821%" y="292" width="0.1605%" height="15" fill="rgb(227,1,9)" fg:x="90219" fg:w="1142"/><text x="12.9321%" y="302.50"></text></g><g><title>inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/typing.py:426) (1,403 samples, 0.20%)</title><rect x="12.8426%" y="292" width="0.1972%" height="15" fill="rgb(248,47,43)" fg:x="91361" fg:w="1403"/><text x="13.0926%" y="302.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (5,924 samples, 0.83%)</title><rect x="12.2711%" y="276" width="0.8327%" height="15" fill="rgb(221,10,30)" fg:x="87295" fg:w="5924"/><text x="12.5211%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (39,241 samples, 5.52%)</title><rect x="7.6254%" y="212" width="5.5161%" height="15" fill="rgb(210,229,1)" fg:x="54246" fg:w="39241"/><text x="7.8754%" y="222.50">__rich_..</text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (9,457 samples, 1.33%)</title><rect x="11.8121%" y="228" width="1.3294%" height="15" fill="rgb(222,148,37)" fg:x="84030" fg:w="9457"/><text x="12.0621%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (6,816 samples, 0.96%)</title><rect x="12.1834%" y="244" width="0.9581%" height="15" fill="rgb(234,67,33)" fg:x="86671" fg:w="6816"/><text x="12.4334%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (6,808 samples, 0.96%)</title><rect x="12.1845%" y="260" width="0.9570%" height="15" fill="rgb(247,98,35)" fg:x="86679" fg:w="6808"/><text x="12.4345%" y="270.50"></text></g><g><title>get_current_style (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:758) (936 samples, 0.13%)</title><rect x="13.4214%" y="260" width="0.1316%" height="15" fill="rgb(247,138,52)" fg:x="95478" fg:w="936"/><text x="13.6714%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:719) (2,451 samples, 0.34%)</title><rect x="13.2296%" y="244" width="0.3445%" height="15" fill="rgb(213,79,30)" fg:x="94114" fg:w="2451"/><text x="13.4796%" y="254.50"></text></g><g><title>__init__ (__init__) (1,285 samples, 0.18%)</title><rect x="14.0641%" y="292" width="0.1806%" height="15" fill="rgb(246,177,23)" fg:x="100050" fg:w="1285"/><text x="14.3141%" y="302.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/containers.py:69) (1,285 samples, 0.18%)</title><rect x="14.0641%" y="308" width="0.1806%" height="15" fill="rgb(230,62,27)" fg:x="100050" fg:w="1285"/><text x="14.3141%" y="318.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1129) (1,277 samples, 0.18%)</title><rect x="14.0652%" y="324" width="0.1795%" height="15" fill="rgb(216,154,8)" fg:x="100058" fg:w="1277"/><text x="14.3152%" y="334.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:144) (985 samples, 0.14%)</title><rect x="14.1062%" y="340" width="0.1385%" height="15" fill="rgb(244,35,45)" fg:x="100350" fg:w="985"/><text x="14.3562%" y="350.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (2,842 samples, 0.40%)</title><rect x="13.8554%" y="276" width="0.3995%" height="15" fill="rgb(251,115,12)" fg:x="98566" fg:w="2842"/><text x="14.1054%" y="286.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (2,981 samples, 0.42%)</title><rect x="13.8361%" y="260" width="0.4190%" height="15" fill="rgb(240,54,50)" fg:x="98428" fg:w="2981"/><text x="14.0861%" y="270.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (7,882 samples, 1.11%)</title><rect x="13.1637%" y="228" width="1.1080%" height="15" fill="rgb(233,84,52)" fg:x="93645" fg:w="7882"/><text x="13.4137%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (4,962 samples, 0.70%)</title><rect x="13.5742%" y="244" width="0.6975%" height="15" fill="rgb(207,117,47)" fg:x="96565" fg:w="4962"/><text x="13.8242%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (8,043 samples, 1.13%)</title><rect x="13.1419%" y="212" width="1.1306%" height="15" fill="rgb(249,43,39)" fg:x="93490" fg:w="8043"/><text x="13.3919%" y="222.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (47,321 samples, 6.65%)</title><rect x="7.6219%" y="196" width="6.6519%" height="15" fill="rgb(209,38,44)" fg:x="54221" fg:w="47321"/><text x="7.8719%" y="206.50">render (/..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (48,444 samples, 6.81%)</title><rect x="7.5388%" y="164" width="6.8098%" height="15" fill="rgb(236,212,23)" fg:x="53630" fg:w="48444"/><text x="7.7888%" y="174.50">print (/h..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (48,414 samples, 6.81%)</title><rect x="7.5430%" y="180" width="6.8056%" height="15" fill="rgb(242,79,21)" fg:x="53660" fg:w="48414"/><text x="7.7930%" y="190.50">print (/h..</text></g><g><title>handle_lapdata (/home/wynand/git/simba/src/utils/udp_to_influx.py:128) (49,305 samples, 6.93%)</title><rect x="7.4186%" y="132" width="6.9308%" height="15" fill="rgb(211,96,35)" fg:x="52775" fg:w="49305"/><text x="7.6686%" y="142.50">handle_la..</text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (48,981 samples, 6.89%)</title><rect x="7.4641%" y="148" width="6.8853%" height="15" fill="rgb(253,215,40)" fg:x="53099" fg:w="48981"/><text x="7.7141%" y="158.50">update_ca..</text></g><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (20,343 samples, 2.86%)</title><rect x="14.5548%" y="228" width="2.8596%" height="15" fill="rgb(211,81,21)" fg:x="103541" fg:w="20343"/><text x="14.8048%" y="238.50">__..</text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (20,215 samples, 2.84%)</title><rect x="14.5728%" y="244" width="2.8416%" height="15" fill="rgb(208,190,38)" fg:x="103669" fg:w="20215"/><text x="14.8228%" y="254.50">hi..</text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (20,208 samples, 2.84%)</title><rect x="14.5738%" y="260" width="2.8406%" height="15" fill="rgb(235,213,38)" fg:x="103676" fg:w="20208"/><text x="14.8238%" y="270.50">hi..</text></g><g><title>_ansi_tokenize (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:28) (1,228 samples, 0.17%)</title><rect x="18.0055%" y="340" width="0.1726%" height="15" fill="rgb(237,122,38)" fg:x="128089" fg:w="1228"/><text x="18.2555%" y="350.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (6,844 samples, 0.96%)</title><rect x="17.7214%" y="276" width="0.9621%" height="15" fill="rgb(244,218,35)" fg:x="126068" fg:w="6844"/><text x="17.9714%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (6,746 samples, 0.95%)</title><rect x="17.7352%" y="292" width="0.9483%" height="15" fill="rgb(240,68,47)" fg:x="126166" fg:w="6746"/><text x="17.9852%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (6,685 samples, 0.94%)</title><rect x="17.7438%" y="308" width="0.9397%" height="15" fill="rgb(210,16,53)" fg:x="126227" fg:w="6685"/><text x="17.9938%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (6,394 samples, 0.90%)</title><rect x="17.7847%" y="324" width="0.8988%" height="15" fill="rgb(235,124,12)" fg:x="126518" fg:w="6394"/><text x="18.0347%" y="334.50"></text></g><g><title>append (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:964) (3,595 samples, 0.51%)</title><rect x="18.1781%" y="340" width="0.5054%" height="15" fill="rgb(224,169,11)" fg:x="129317" fg:w="3595"/><text x="18.4281%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (2,994 samples, 0.42%)</title><rect x="18.2626%" y="356" width="0.4209%" height="15" fill="rgb(250,166,2)" fg:x="129918" fg:w="2994"/><text x="18.5126%" y="366.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (9,004 samples, 1.27%)</title><rect x="17.4179%" y="244" width="1.2657%" height="15" fill="rgb(242,216,29)" fg:x="123909" fg:w="9004"/><text x="17.6679%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (7,075 samples, 0.99%)</title><rect x="17.6891%" y="260" width="0.9945%" height="15" fill="rgb(230,116,27)" fg:x="125838" fg:w="7075"/><text x="17.9391%" y="270.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (9,030 samples, 1.27%)</title><rect x="17.4144%" y="228" width="1.2693%" height="15" fill="rgb(228,99,48)" fg:x="123884" fg:w="9030"/><text x="17.6644%" y="238.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:489) (1,074 samples, 0.15%)</title><rect x="18.7219%" y="260" width="0.1510%" height="15" fill="rgb(253,11,6)" fg:x="133185" fg:w="1074"/><text x="18.9719%" y="270.50"></text></g><g><title>__str__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:552) (973 samples, 0.14%)</title><rect x="18.7360%" y="276" width="0.1368%" height="15" fill="rgb(247,143,39)" fg:x="133286" fg:w="973"/><text x="18.9860%" y="286.50"></text></g><g><title>expand (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:519) (819 samples, 0.12%)</title><rect x="18.8790%" y="260" width="0.1151%" height="15" fill="rgb(236,97,10)" fg:x="134303" fg:w="819"/><text x="19.1290%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:467) (2,283 samples, 0.32%)</title><rect x="18.6913%" y="244" width="0.3209%" height="15" fill="rgb(233,208,19)" fg:x="132968" fg:w="2283"/><text x="18.9413%" y="254.50"></text></g><g><title>_safe_isinstance (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:161) (1,133 samples, 0.16%)</title><rect x="19.4998%" y="292" width="0.1593%" height="15" fill="rgb(216,164,2)" fg:x="138719" fg:w="1133"/><text x="19.7498%" y="302.50"></text></g><g><title>inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/typing.py:426) (1,442 samples, 0.20%)</title><rect x="19.6590%" y="292" width="0.2027%" height="15" fill="rgb(220,129,5)" fg:x="139852" fg:w="1442"/><text x="19.9090%" y="302.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (5,888 samples, 0.83%)</title><rect x="19.1010%" y="276" width="0.8277%" height="15" fill="rgb(242,17,10)" fg:x="135882" fg:w="5888"/><text x="19.3510%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (38,548 samples, 5.42%)</title><rect x="14.5427%" y="212" width="5.4187%" height="15" fill="rgb(242,107,0)" fg:x="103455" fg:w="38548"/><text x="14.7927%" y="222.50">__rich_..</text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (9,089 samples, 1.28%)</title><rect x="18.6838%" y="228" width="1.2776%" height="15" fill="rgb(251,28,31)" fg:x="132914" fg:w="9089"/><text x="18.9338%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (6,752 samples, 0.95%)</title><rect x="19.0123%" y="244" width="0.9491%" height="15" fill="rgb(233,223,10)" fg:x="135251" fg:w="6752"/><text x="19.2623%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (6,745 samples, 0.95%)</title><rect x="19.0133%" y="260" width="0.9481%" height="15" fill="rgb(215,21,27)" fg:x="135258" fg:w="6745"/><text x="19.2633%" y="270.50"></text></g><g><title>get_current_style (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:758) (854 samples, 0.12%)</title><rect x="20.2127%" y="260" width="0.1200%" height="15" fill="rgb(232,23,21)" fg:x="143791" fg:w="854"/><text x="20.4627%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:719) (2,184 samples, 0.31%)</title><rect x="20.0425%" y="244" width="0.3070%" height="15" fill="rgb(244,5,23)" fg:x="142580" fg:w="2184"/><text x="20.2925%" y="254.50"></text></g><g><title>__init__ (__init__) (1,516 samples, 0.21%)</title><rect x="20.8386%" y="292" width="0.2131%" height="15" fill="rgb(226,81,46)" fg:x="148243" fg:w="1516"/><text x="21.0886%" y="302.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/containers.py:69) (1,516 samples, 0.21%)</title><rect x="20.8386%" y="308" width="0.2131%" height="15" fill="rgb(247,70,30)" fg:x="148243" fg:w="1516"/><text x="21.0886%" y="318.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1129) (1,497 samples, 0.21%)</title><rect x="20.8412%" y="324" width="0.2104%" height="15" fill="rgb(212,68,19)" fg:x="148262" fg:w="1497"/><text x="21.0912%" y="334.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:144) (983 samples, 0.14%)</title><rect x="20.9135%" y="340" width="0.1382%" height="15" fill="rgb(240,187,13)" fg:x="148776" fg:w="983"/><text x="21.1635%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (816 samples, 0.11%)</title><rect x="20.9370%" y="356" width="0.1147%" height="15" fill="rgb(223,113,26)" fg:x="148943" fg:w="816"/><text x="21.1870%" y="366.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (3,536 samples, 0.50%)</title><rect x="20.5643%" y="260" width="0.4971%" height="15" fill="rgb(206,192,2)" fg:x="146292" fg:w="3536"/><text x="20.8143%" y="270.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (3,417 samples, 0.48%)</title><rect x="20.5810%" y="276" width="0.4803%" height="15" fill="rgb(241,108,4)" fg:x="146411" fg:w="3417"/><text x="20.8310%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (7,786 samples, 1.09%)</title><rect x="19.9793%" y="228" width="1.0945%" height="15" fill="rgb(247,173,49)" fg:x="142130" fg:w="7786"/><text x="20.2293%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (5,152 samples, 0.72%)</title><rect x="20.3495%" y="244" width="0.7242%" height="15" fill="rgb(224,114,35)" fg:x="144764" fg:w="5152"/><text x="20.5995%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (7,917 samples, 1.11%)</title><rect x="19.9615%" y="212" width="1.1129%" height="15" fill="rgb(245,159,27)" fg:x="142004" fg:w="7917"/><text x="20.2115%" y="222.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (46,506 samples, 6.54%)</title><rect x="14.5381%" y="196" width="6.5374%" height="15" fill="rgb(245,172,44)" fg:x="103422" fg:w="46506"/><text x="14.7881%" y="206.50">render (/..</text></g><g><title>handle_motion (/home/wynand/git/simba/src/utils/udp_to_influx.py:117) (48,308 samples, 6.79%)</title><rect x="14.3494%" y="132" width="6.7907%" height="15" fill="rgb(236,23,11)" fg:x="102080" fg:w="48308"/><text x="14.5994%" y="142.50">handle_mo..</text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (48,087 samples, 6.76%)</title><rect x="14.3805%" y="148" width="6.7596%" height="15" fill="rgb(205,117,38)" fg:x="102301" fg:w="48087"/><text x="14.6305%" y="158.50">update_ca..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (47,487 samples, 6.68%)</title><rect x="14.4648%" y="164" width="6.6753%" height="15" fill="rgb(237,72,25)" fg:x="102901" fg:w="47487"/><text x="14.7148%" y="174.50">print (/h..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (47,443 samples, 6.67%)</title><rect x="14.4710%" y="180" width="6.6691%" height="15" fill="rgb(244,70,9)" fg:x="102945" fg:w="47443"/><text x="14.7210%" y="190.50">print (/h..</text></g><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (4,369 samples, 0.61%)</title><rect x="21.2777%" y="228" width="0.6142%" height="15" fill="rgb(217,125,39)" fg:x="151367" fg:w="4369"/><text x="21.5277%" y="238.50"></text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (4,354 samples, 0.61%)</title><rect x="21.2798%" y="244" width="0.6120%" height="15" fill="rgb(235,36,10)" fg:x="151382" fg:w="4354"/><text x="21.5298%" y="254.50"></text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (4,353 samples, 0.61%)</title><rect x="21.2799%" y="260" width="0.6119%" height="15" fill="rgb(251,123,47)" fg:x="151383" fg:w="4353"/><text x="21.5299%" y="270.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (1,653 samples, 0.23%)</title><rect x="21.8919%" y="228" width="0.2324%" height="15" fill="rgb(221,13,13)" fg:x="155736" fg:w="1653"/><text x="22.1419%" y="238.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (1,631 samples, 0.23%)</title><rect x="21.8949%" y="244" width="0.2293%" height="15" fill="rgb(238,131,9)" fg:x="155758" fg:w="1631"/><text x="22.1449%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (1,258 samples, 0.18%)</title><rect x="21.9474%" y="260" width="0.1768%" height="15" fill="rgb(211,50,8)" fg:x="156131" fg:w="1258"/><text x="22.1974%" y="270.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (1,214 samples, 0.17%)</title><rect x="21.9536%" y="276" width="0.1707%" height="15" fill="rgb(245,182,24)" fg:x="156175" fg:w="1214"/><text x="22.2036%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (1,199 samples, 0.17%)</title><rect x="21.9557%" y="292" width="0.1685%" height="15" fill="rgb(242,14,37)" fg:x="156190" fg:w="1199"/><text x="22.2057%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (1,185 samples, 0.17%)</title><rect x="21.9576%" y="308" width="0.1666%" height="15" fill="rgb(246,228,12)" fg:x="156204" fg:w="1185"/><text x="22.2076%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (1,125 samples, 0.16%)</title><rect x="21.9661%" y="324" width="0.1581%" height="15" fill="rgb(213,55,15)" fg:x="156264" fg:w="1125"/><text x="22.2161%" y="334.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (1,215 samples, 0.17%)</title><rect x="22.2094%" y="276" width="0.1708%" height="15" fill="rgb(209,9,3)" fg:x="157995" fg:w="1215"/><text x="22.4594%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (7,910 samples, 1.11%)</title><rect x="21.2750%" y="212" width="1.1119%" height="15" fill="rgb(230,59,30)" fg:x="151348" fg:w="7910"/><text x="21.5250%" y="222.50"></text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (1,868 samples, 0.26%)</title><rect x="22.1244%" y="228" width="0.2626%" height="15" fill="rgb(209,121,21)" fg:x="157390" fg:w="1868"/><text x="22.3744%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (1,380 samples, 0.19%)</title><rect x="22.1930%" y="244" width="0.1940%" height="15" fill="rgb(220,109,13)" fg:x="157878" fg:w="1380"/><text x="22.4430%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (1,378 samples, 0.19%)</title><rect x="22.1932%" y="260" width="0.1937%" height="15" fill="rgb(232,18,1)" fg:x="157880" fg:w="1378"/><text x="22.4432%" y="270.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (945 samples, 0.13%)</title><rect x="22.5248%" y="260" width="0.1328%" height="15" fill="rgb(215,41,42)" fg:x="160239" fg:w="945"/><text x="22.7748%" y="270.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (906 samples, 0.13%)</title><rect x="22.5303%" y="276" width="0.1274%" height="15" fill="rgb(224,123,36)" fg:x="160278" fg:w="906"/><text x="22.7803%" y="286.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (1,948 samples, 0.27%)</title><rect x="22.3869%" y="212" width="0.2738%" height="15" fill="rgb(240,125,3)" fg:x="159258" fg:w="1948"/><text x="22.6369%" y="222.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (1,918 samples, 0.27%)</title><rect x="22.3912%" y="228" width="0.2696%" height="15" fill="rgb(205,98,50)" fg:x="159288" fg:w="1918"/><text x="22.6412%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (1,372 samples, 0.19%)</title><rect x="22.4679%" y="244" width="0.1929%" height="15" fill="rgb(205,185,37)" fg:x="159834" fg:w="1372"/><text x="22.7179%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (9,867 samples, 1.39%)</title><rect x="21.2740%" y="196" width="1.3870%" height="15" fill="rgb(238,207,15)" fg:x="151341" fg:w="9867"/><text x="21.5240%" y="206.50"></text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (10,083 samples, 1.42%)</title><rect x="21.2558%" y="164" width="1.4174%" height="15" fill="rgb(213,199,42)" fg:x="151211" fg:w="10083"/><text x="21.5058%" y="174.50"></text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (10,078 samples, 1.42%)</title><rect x="21.2565%" y="180" width="1.4167%" height="15" fill="rgb(235,201,11)" fg:x="151216" fg:w="10078"/><text x="21.5065%" y="190.50"></text></g><g><title>handle_setups (/home/wynand/git/simba/src/utils/udp_to_influx.py:150) (10,223 samples, 1.44%)</title><rect x="21.2364%" y="132" width="1.4370%" height="15" fill="rgb(207,46,11)" fg:x="151073" fg:w="10223"/><text x="21.4864%" y="142.50"></text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (10,175 samples, 1.43%)</title><rect x="21.2431%" y="148" width="1.4303%" height="15" fill="rgb(241,35,35)" fg:x="151121" fg:w="10175"/><text x="21.4931%" y="158.50"></text></g><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (22,115 samples, 3.11%)</title><rect x="22.8921%" y="228" width="3.1087%" height="15" fill="rgb(243,32,47)" fg:x="162852" fg:w="22115"/><text x="23.1421%" y="238.50">__c..</text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (21,993 samples, 3.09%)</title><rect x="22.9093%" y="244" width="3.0916%" height="15" fill="rgb(247,202,23)" fg:x="162974" fg:w="21993"/><text x="23.1593%" y="254.50">hig..</text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (21,986 samples, 3.09%)</title><rect x="22.9103%" y="260" width="3.0906%" height="15" fill="rgb(219,102,11)" fg:x="162981" fg:w="21986"/><text x="23.1603%" y="270.50">hig..</text></g><g><title>_ansi_tokenize (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:28) (1,130 samples, 0.16%)</title><rect x="26.5928%" y="340" width="0.1588%" height="15" fill="rgb(243,110,44)" fg:x="189178" fg:w="1130"/><text x="26.8428%" y="350.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (8,903 samples, 1.25%)</title><rect x="26.0009%" y="228" width="1.2515%" height="15" fill="rgb(222,74,54)" fg:x="184967" fg:w="8903"/><text x="26.2509%" y="238.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (8,882 samples, 1.25%)</title><rect x="26.0038%" y="244" width="1.2485%" height="15" fill="rgb(216,99,12)" fg:x="184988" fg:w="8882"/><text x="26.2538%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (6,898 samples, 0.97%)</title><rect x="26.2827%" y="260" width="0.9697%" height="15" fill="rgb(226,22,26)" fg:x="186972" fg:w="6898"/><text x="26.5327%" y="270.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (6,664 samples, 0.94%)</title><rect x="26.3156%" y="276" width="0.9368%" height="15" fill="rgb(217,163,10)" fg:x="187206" fg:w="6664"/><text x="26.5656%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (6,581 samples, 0.93%)</title><rect x="26.3273%" y="292" width="0.9251%" height="15" fill="rgb(213,25,53)" fg:x="187289" fg:w="6581"/><text x="26.5773%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (6,523 samples, 0.92%)</title><rect x="26.3354%" y="308" width="0.9169%" height="15" fill="rgb(252,105,26)" fg:x="187347" fg:w="6523"/><text x="26.5854%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (6,196 samples, 0.87%)</title><rect x="26.3814%" y="324" width="0.8710%" height="15" fill="rgb(220,39,43)" fg:x="187674" fg:w="6196"/><text x="26.6314%" y="334.50"></text></g><g><title>append (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:964) (3,562 samples, 0.50%)</title><rect x="26.7516%" y="340" width="0.5007%" height="15" fill="rgb(229,68,48)" fg:x="190308" fg:w="3562"/><text x="27.0016%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (2,998 samples, 0.42%)</title><rect x="26.8309%" y="356" width="0.4214%" height="15" fill="rgb(252,8,32)" fg:x="190872" fg:w="2998"/><text x="27.0809%" y="366.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:489) (1,256 samples, 0.18%)</title><rect x="27.2924%" y="260" width="0.1766%" height="15" fill="rgb(223,20,43)" fg:x="194155" fg:w="1256"/><text x="27.5424%" y="270.50"></text></g><g><title>__str__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:552) (1,142 samples, 0.16%)</title><rect x="27.3084%" y="276" width="0.1605%" height="15" fill="rgb(229,81,49)" fg:x="194269" fg:w="1142"/><text x="27.5584%" y="286.50"></text></g><g><title>expand (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:519) (880 samples, 0.12%)</title><rect x="27.4746%" y="260" width="0.1237%" height="15" fill="rgb(236,28,36)" fg:x="195451" fg:w="880"/><text x="27.7246%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:467) (2,554 samples, 0.36%)</title><rect x="27.2594%" y="244" width="0.3590%" height="15" fill="rgb(249,185,26)" fg:x="193920" fg:w="2554"/><text x="27.5094%" y="254.50"></text></g><g><title>_safe_isinstance (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:161) (1,160 samples, 0.16%)</title><rect x="28.0972%" y="292" width="0.1631%" height="15" fill="rgb(249,174,33)" fg:x="199880" fg:w="1160"/><text x="28.3472%" y="302.50"></text></g><g><title>inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/typing.py:426) (1,436 samples, 0.20%)</title><rect x="28.2602%" y="292" width="0.2019%" height="15" fill="rgb(233,201,37)" fg:x="201040" fg:w="1436"/><text x="28.5102%" y="302.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (5,823 samples, 0.82%)</title><rect x="27.7015%" y="276" width="0.8185%" height="15" fill="rgb(221,78,26)" fg:x="197065" fg:w="5823"/><text x="27.9515%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (40,387 samples, 5.68%)</title><rect x="22.8756%" y="212" width="5.6772%" height="15" fill="rgb(250,127,30)" fg:x="162734" fg:w="40387"/><text x="23.1256%" y="222.50">__rich_..</text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (9,251 samples, 1.30%)</title><rect x="27.2524%" y="228" width="1.3004%" height="15" fill="rgb(230,49,44)" fg:x="193870" fg:w="9251"/><text x="27.5024%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (6,647 samples, 0.93%)</title><rect x="27.6184%" y="244" width="0.9344%" height="15" fill="rgb(229,67,23)" fg:x="196474" fg:w="6647"/><text x="27.8684%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (6,638 samples, 0.93%)</title><rect x="27.6197%" y="260" width="0.9331%" height="15" fill="rgb(249,83,47)" fg:x="196483" fg:w="6638"/><text x="27.8697%" y="270.50"></text></g><g><title>get_current_style (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:758) (735 samples, 0.10%)</title><rect x="28.8252%" y="260" width="0.1033%" height="15" fill="rgb(215,43,3)" fg:x="205059" fg:w="735"/><text x="29.0752%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:719) (2,214 samples, 0.31%)</title><rect x="28.6377%" y="244" width="0.3112%" height="15" fill="rgb(238,154,13)" fg:x="203725" fg:w="2214"/><text x="28.8877%" y="254.50"></text></g><g><title>__init__ (__init__) (1,308 samples, 0.18%)</title><rect x="29.4202%" y="292" width="0.1839%" height="15" fill="rgb(219,56,2)" fg:x="209292" fg:w="1308"/><text x="29.6702%" y="302.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/containers.py:69) (1,308 samples, 0.18%)</title><rect x="29.4202%" y="308" width="0.1839%" height="15" fill="rgb(233,0,4)" fg:x="209292" fg:w="1308"/><text x="29.6702%" y="318.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1129) (1,293 samples, 0.18%)</title><rect x="29.4223%" y="324" width="0.1818%" height="15" fill="rgb(235,30,7)" fg:x="209307" fg:w="1293"/><text x="29.6723%" y="334.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:144) (898 samples, 0.13%)</title><rect x="29.4779%" y="340" width="0.1262%" height="15" fill="rgb(250,79,13)" fg:x="209702" fg:w="898"/><text x="29.7279%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (718 samples, 0.10%)</title><rect x="29.5032%" y="356" width="0.1009%" height="15" fill="rgb(211,146,34)" fg:x="209882" fg:w="718"/><text x="29.7532%" y="366.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (2,863 samples, 0.40%)</title><rect x="29.2109%" y="276" width="0.4025%" height="15" fill="rgb(228,22,38)" fg:x="207803" fg:w="2863"/><text x="29.4609%" y="286.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (2,960 samples, 0.42%)</title><rect x="29.1974%" y="260" width="0.4161%" height="15" fill="rgb(235,168,5)" fg:x="207707" fg:w="2960"/><text x="29.4474%" y="270.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (7,477 samples, 1.05%)</title><rect x="28.5765%" y="228" width="1.0510%" height="15" fill="rgb(221,155,16)" fg:x="203290" fg:w="7477"/><text x="28.8265%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (4,828 samples, 0.68%)</title><rect x="28.9489%" y="244" width="0.6787%" height="15" fill="rgb(215,215,53)" fg:x="205939" fg:w="4828"/><text x="29.1989%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (7,650 samples, 1.08%)</title><rect x="28.5529%" y="212" width="1.0754%" height="15" fill="rgb(223,4,10)" fg:x="203122" fg:w="7650"/><text x="28.8029%" y="222.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (48,068 samples, 6.76%)</title><rect x="22.8716%" y="196" width="6.7569%" height="15" fill="rgb(234,103,6)" fg:x="162706" fg:w="48068"/><text x="23.1216%" y="206.50">render (/..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (49,202 samples, 6.92%)</title><rect x="22.7857%" y="164" width="6.9163%" height="15" fill="rgb(227,97,0)" fg:x="162095" fg:w="49202"/><text x="23.0357%" y="174.50">print (/h..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (49,158 samples, 6.91%)</title><rect x="22.7919%" y="180" width="6.9102%" height="15" fill="rgb(234,150,53)" fg:x="162139" fg:w="49158"/><text x="23.0419%" y="190.50">print (/h..</text></g><g><title>handle_status (/home/wynand/git/simba/src/utils/udp_to_influx.py:162) (50,004 samples, 7.03%)</title><rect x="22.6734%" y="132" width="7.0291%" height="15" fill="rgb(228,201,54)" fg:x="161296" fg:w="50004"/><text x="22.9234%" y="142.50">handle_st..</text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (49,725 samples, 6.99%)</title><rect x="22.7126%" y="148" width="6.9899%" height="15" fill="rgb(222,22,37)" fg:x="161575" fg:w="49725"/><text x="22.9626%" y="158.50">update_ca..</text></g><g><title>__call__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:20) (18,668 samples, 2.62%)</title><rect x="29.9236%" y="228" width="2.6242%" height="15" fill="rgb(237,53,32)" fg:x="212873" fg:w="18668"/><text x="30.1736%" y="238.50">__..</text></g><g><title>highlight (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/highlighter.py:67) (18,566 samples, 2.61%)</title><rect x="29.9380%" y="244" width="2.6098%" height="15" fill="rgb(233,25,53)" fg:x="212975" fg:w="18566"/><text x="30.1880%" y="254.50">hi..</text></g><g><title>highlight_regex (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:593) (18,558 samples, 2.61%)</title><rect x="29.9391%" y="260" width="2.6087%" height="15" fill="rgb(210,40,34)" fg:x="212983" fg:w="18558"/><text x="30.1891%" y="270.50">hi..</text></g><g><title>_ansi_tokenize (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:28) (1,232 samples, 0.17%)</title><rect x="33.1209%" y="340" width="0.1732%" height="15" fill="rgb(241,220,44)" fg:x="235618" fg:w="1232"/><text x="33.3709%" y="350.50"></text></g><g><title>join (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:778) (8,747 samples, 1.23%)</title><rect x="32.5520%" y="244" width="1.2296%" height="15" fill="rgb(235,28,35)" fg:x="231571" fg:w="8747"/><text x="32.8020%" y="254.50"></text></g><g><title>iter_text (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:790) (6,908 samples, 0.97%)</title><rect x="32.8105%" y="260" width="0.9711%" height="15" fill="rgb(210,56,17)" fg:x="233410" fg:w="6908"/><text x="33.0605%" y="270.50"></text></g><g><title>loop_last (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/_loop.py:18) (6,673 samples, 0.94%)</title><rect x="32.8435%" y="276" width="0.9380%" height="15" fill="rgb(224,130,29)" fg:x="233645" fg:w="6673"/><text x="33.0935%" y="286.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:328) (6,600 samples, 0.93%)</title><rect x="32.8538%" y="292" width="0.9278%" height="15" fill="rgb(235,212,8)" fg:x="233718" fg:w="6600"/><text x="33.1038%" y="302.50"></text></g><g><title>decode (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:126) (6,542 samples, 0.92%)</title><rect x="32.8620%" y="308" width="0.9196%" height="15" fill="rgb(223,33,50)" fg:x="233776" fg:w="6542"/><text x="33.1120%" y="318.50"></text></g><g><title>decode_line (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/ansi.py:138) (6,232 samples, 0.88%)</title><rect x="32.9055%" y="324" width="0.8760%" height="15" fill="rgb(219,149,13)" fg:x="234086" fg:w="6232"/><text x="33.1555%" y="334.50"></text></g><g><title>append (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:964) (3,468 samples, 0.49%)</title><rect x="33.2941%" y="340" width="0.4875%" height="15" fill="rgb(250,156,29)" fg:x="236850" fg:w="3468"/><text x="33.5441%" y="350.50"></text></g><g><title>strip_control_codes (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/control.py:181) (2,899 samples, 0.41%)</title><rect x="33.3741%" y="356" width="0.4075%" height="15" fill="rgb(216,193,19)" fg:x="237419" fg:w="2899"/><text x="33.6241%" y="366.50"></text></g><g><title>from_ansi (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:293) (8,779 samples, 1.23%)</title><rect x="32.5478%" y="228" width="1.2341%" height="15" fill="rgb(216,135,14)" fg:x="231541" fg:w="8779"/><text x="32.7978%" y="238.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:489) (1,143 samples, 0.16%)</title><rect x="33.8263%" y="260" width="0.1607%" height="15" fill="rgb(241,47,5)" fg:x="240636" fg:w="1143"/><text x="34.0763%" y="270.50"></text></g><g><title>__str__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:552) (1,058 samples, 0.15%)</title><rect x="33.8382%" y="276" width="0.1487%" height="15" fill="rgb(233,42,35)" fg:x="240721" fg:w="1058"/><text x="34.0882%" y="286.50"></text></g><g><title>expand (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:519) (823 samples, 0.12%)</title><rect x="33.9935%" y="260" width="0.1157%" height="15" fill="rgb(231,13,6)" fg:x="241826" fg:w="823"/><text x="34.2435%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:467) (2,380 samples, 0.33%)</title><rect x="33.7903%" y="244" width="0.3346%" height="15" fill="rgb(207,181,40)" fg:x="240380" fg:w="2380"/><text x="34.0403%" y="254.50"></text></g><g><title>_safe_isinstance (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:161) (1,043 samples, 0.15%)</title><rect x="34.6056%" y="292" width="0.1466%" height="15" fill="rgb(254,173,49)" fg:x="246180" fg:w="1043"/><text x="34.8556%" y="302.50"></text></g><g><title>inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/typing.py:426) (1,326 samples, 0.19%)</title><rect x="34.7522%" y="292" width="0.1864%" height="15" fill="rgb(221,1,38)" fg:x="247223" fg:w="1326"/><text x="35.0022%" y="302.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (5,602 samples, 0.79%)</title><rect x="34.2058%" y="276" width="0.7875%" height="15" fill="rgb(206,124,46)" fg:x="243336" fg:w="5602"/><text x="34.4558%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:304) (36,379 samples, 5.11%)</title><rect x="29.9114%" y="212" width="5.1138%" height="15" fill="rgb(249,21,11)" fg:x="212786" fg:w="36379"/><text x="30.1614%" y="222.50">__rich..</text></g><g><title>pretty_repr (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:878) (8,845 samples, 1.24%)</title><rect x="33.7818%" y="228" width="1.2433%" height="15" fill="rgb(222,201,40)" fg:x="240320" fg:w="8845"/><text x="34.0318%" y="238.50"></text></g><g><title>traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:580) (6,405 samples, 0.90%)</title><rect x="34.1248%" y="244" width="0.9004%" height="15" fill="rgb(235,61,29)" fg:x="242760" fg:w="6405"/><text x="34.3748%" y="254.50"></text></g><g><title>_traverse (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/pretty.py:621) (6,401 samples, 0.90%)</title><rect x="34.1254%" y="260" width="0.8998%" height="15" fill="rgb(219,207,3)" fg:x="242764" fg:w="6401"/><text x="34.3754%" y="270.50"></text></g><g><title>get_current_style (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:758) (833 samples, 0.12%)</title><rect x="35.2914%" y="260" width="0.1171%" height="15" fill="rgb(222,56,46)" fg:x="251059" fg:w="833"/><text x="35.5414%" y="270.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:719) (2,199 samples, 0.31%)</title><rect x="35.1167%" y="244" width="0.3091%" height="15" fill="rgb(239,76,54)" fg:x="249816" fg:w="2199"/><text x="35.3667%" y="254.50"></text></g><g><title>__init__ (__init__) (1,120 samples, 0.16%)</title><rect x="35.8241%" y="292" width="0.1574%" height="15" fill="rgb(231,124,27)" fg:x="254848" fg:w="1120"/><text x="36.0741%" y="302.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/containers.py:69) (1,119 samples, 0.16%)</title><rect x="35.8242%" y="308" width="0.1573%" height="15" fill="rgb(249,195,6)" fg:x="254849" fg:w="1119"/><text x="36.0742%" y="318.50"></text></g><g><title>&lt;genexpr&gt; (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1129) (1,112 samples, 0.16%)</title><rect x="35.8252%" y="324" width="0.1563%" height="15" fill="rgb(237,174,47)" fg:x="254856" fg:w="1112"/><text x="36.0752%" y="334.50"></text></g><g><title>__init__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:144) (728 samples, 0.10%)</title><rect x="35.8792%" y="340" width="0.1023%" height="15" fill="rgb(206,201,31)" fg:x="255240" fg:w="728"/><text x="36.1292%" y="350.50"></text></g><g><title>split (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1062) (2,369 samples, 0.33%)</title><rect x="35.6555%" y="260" width="0.3330%" height="15" fill="rgb(231,57,52)" fg:x="253649" fg:w="2369"/><text x="35.9055%" y="270.50"></text></g><g><title>divide (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1106) (2,306 samples, 0.32%)</title><rect x="35.6644%" y="276" width="0.3242%" height="15" fill="rgb(248,177,22)" fg:x="253712" fg:w="2306"/><text x="35.9144%" y="286.50"></text></g><g><title>__rich_console__ (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:689) (6,812 samples, 0.96%)</title><rect x="35.0437%" y="228" width="0.9576%" height="15" fill="rgb(215,211,37)" fg:x="249297" fg:w="6812"/><text x="35.2937%" y="238.50"></text></g><g><title>wrap (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/text.py:1201) (4,094 samples, 0.58%)</title><rect x="35.4258%" y="244" width="0.5755%" height="15" fill="rgb(241,128,51)" fg:x="252015" fg:w="4094"/><text x="35.6758%" y="254.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (6,948 samples, 0.98%)</title><rect x="35.0252%" y="212" width="0.9767%" height="15" fill="rgb(227,165,31)" fg:x="249165" fg:w="6948"/><text x="35.2752%" y="222.50"></text></g><g><title>render (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1300) (43,350 samples, 6.09%)</title><rect x="29.9084%" y="196" width="6.0937%" height="15" fill="rgb(228,167,24)" fg:x="212765" fg:w="43350"/><text x="30.1584%" y="206.50">render (..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/__init__.py:53) (44,369 samples, 6.24%)</title><rect x="29.8297%" y="164" width="6.2370%" height="15" fill="rgb(228,143,12)" fg:x="212205" fg:w="44369"/><text x="30.0797%" y="174.50">print (/..</text></g><g><title>print (/home/wynand/git/simba/.venv/lib/python3.13/site-packages/rich/console.py:1648) (44,322 samples, 6.23%)</title><rect x="29.8363%" y="180" width="6.2304%" height="15" fill="rgb(249,149,8)" fg:x="212252" fg:w="44322"/><text x="30.0863%" y="190.50">print (/..</text></g><g><title>handle_telemetry (/home/wynand/git/simba/src/utils/udp_to_influx.py:156) (45,277 samples, 6.36%)</title><rect x="29.7025%" y="132" width="6.3646%" height="15" fill="rgb(243,35,44)" fg:x="211300" fg:w="45277"/><text x="29.9525%" y="142.50">handle_t..</text></g><g><title>update_cars_data (/home/wynand/git/simba/src/utils/udp_to_influx.py:59) (44,976 samples, 6.32%)</title><rect x="29.7448%" y="148" width="6.3223%" height="15" fill="rgb(246,89,9)" fg:x="211601" fg:w="44976"/><text x="29.9948%" y="158.50">update_c..</text></g><g><title>decode_udp (/home/wynand/git/simba/src/utils/udp_processor.py:43) (251,686 samples, 35.38%)</title><rect x="0.7072%" y="116" width="35.3796%" height="15" fill="rgb(233,213,13)" fg:x="5031" fg:w="251686"/><text x="0.9572%" y="126.50">decode_udp (/home/wynand/git/simba/src/utils/udp_processo..</text></g><g><title>process_named_shared_memory (/home/wynand/git/simba/src/utils/udp_processor.py:18) (256,178 samples, 36.01%)</title><rect x="0.0797%" y="100" width="36.0110%" height="15" fill="rgb(233,141,41)" fg:x="567" fg:w="256178"/><text x="0.3297%" y="110.50">process_named_shared_memory (/home/wynand/git/simba/src/uti..</text></g><g><title>&lt;module&gt; (/home/wynand/git/simba/src/utils/udp_processor.py:1) (256,474 samples, 36.05%)</title><rect x="0.0382%" y="84" width="36.0526%" height="15" fill="rgb(239,167,4)" fg:x="272" fg:w="256474"/><text x="0.2882%" y="94.50">&lt;module&gt; (/home/wynand/git/simba/src/utils/udp_processor.py..</text></g><g><title>_handle_results (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/pool.py:573) (16,448 samples, 2.31%)</title><rect x="36.0966%" y="132" width="2.3121%" height="15" fill="rgb(209,217,16)" fg:x="256787" fg:w="16448"/><text x="36.3466%" y="142.50">_..</text></g><g><title>recv (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/connection.py:246) (16,382 samples, 2.30%)</title><rect x="36.1059%" y="148" width="2.3028%" height="15" fill="rgb(219,88,35)" fg:x="256853" fg:w="16382"/><text x="36.3559%" y="158.50">r..</text></g><g><title>_recv_bytes (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/connection.py:429) (16,274 samples, 2.29%)</title><rect x="36.1211%" y="164" width="2.2876%" height="15" fill="rgb(220,193,23)" fg:x="256961" fg:w="16274"/><text x="36.3711%" y="174.50">_..</text></g><g><title>_recv (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/connection.py:390) (16,265 samples, 2.29%)</title><rect x="36.1223%" y="180" width="2.2864%" height="15" fill="rgb(230,90,52)" fg:x="256970" fg:w="16265"/><text x="36.3723%" y="190.50">_..</text></g><g><title>_handle_tasks (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/pool.py:527) (16,482 samples, 2.32%)</title><rect x="38.4087%" y="132" width="2.3169%" height="15" fill="rgb(252,106,19)" fg:x="273235" fg:w="16482"/><text x="38.6587%" y="142.50">_..</text></g><g><title>run (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/threading.py:984) (33,746 samples, 4.74%)</title><rect x="36.0920%" y="116" width="4.7437%" height="15" fill="rgb(206,74,20)" fg:x="256754" fg:w="33746"/><text x="36.3420%" y="126.50">run (/..</text></g><g><title>_handle_workers (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/pool.py:506) (783 samples, 0.11%)</title><rect x="40.7256%" y="132" width="0.1101%" height="15" fill="rgb(230,138,44)" fg:x="289717" fg:w="783"/><text x="40.9756%" y="142.50"></text></g><g><title>_bootstrap (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/threading.py:1001) (33,761 samples, 4.75%)</title><rect x="36.0909%" y="84" width="4.7458%" height="15" fill="rgb(235,182,43)" fg:x="256746" fg:w="33761"/><text x="36.3409%" y="94.50">_boots..</text></g><g><title>_bootstrap_inner (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/threading.py:1028) (33,761 samples, 4.75%)</title><rect x="36.0909%" y="100" width="4.7458%" height="15" fill="rgb(242,16,51)" fg:x="256746" fg:w="33761"/><text x="36.3409%" y="110.50">_boots..</text></g><g><title>&lt;module&gt; (/home/wynand/git/simba/src/utils/udp_processor.py:1) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="100" width="0.5917%" height="15" fill="rgb(248,9,4)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="110.50"></text></g><g><title>start (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/process.py:110) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="116" width="0.5917%" height="15" fill="rgb(210,31,22)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="126.50"></text></g><g><title>_Popen (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/context.py:222) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="132" width="0.5917%" height="15" fill="rgb(239,54,39)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="142.50"></text></g><g><title>_Popen (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/context.py:279) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="148" width="0.5917%" height="15" fill="rgb(230,99,41)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="158.50"></text></g><g><title>__init__ (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/popen_fork.py:16) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="164" width="0.5917%" height="15" fill="rgb(253,106,12)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="174.50"></text></g><g><title>_launch (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/popen_fork.py:63) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="180" width="0.5917%" height="15" fill="rgb(213,46,41)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="190.50"></text></g><g><title>_bootstrap (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/process.py:290) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="196" width="0.5917%" height="15" fill="rgb(215,133,35)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="206.50"></text></g><g><title>run (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/process.py:103) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="212" width="0.5917%" height="15" fill="rgb(213,28,5)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="222.50"></text></g><g><title>udp_receiver (/home/wynand/git/simba/src/utils/udp_receiver.py:36) (4,209 samples, 0.59%)</title><rect x="40.8366%" y="228" width="0.5917%" height="15" fill="rgb(215,77,49)" fg:x="290507" fg:w="4209"/><text x="41.0866%" y="238.50"></text></g><g><title>process 29025:&quot;python utils/udp_processor.py&quot; (6,989 samples, 0.98%)</title><rect x="40.8366%" y="84" width="0.9824%" height="15" fill="rgb(248,100,22)" fg:x="290507" fg:w="6989"/><text x="41.0866%" y="94.50"></text></g><g><title>process 29026:&quot;/home/wynand/git/simba/.venv/bin/python -c from multiprocessing.resource_tracker import main (2,780 samples, 0.39%)</title><rect x="41.4283%" y="100" width="0.3908%" height="15" fill="rgb(208,67,9)" fg:x="294716" fg:w="2780"/><text x="41.6783%" y="110.50"></text></g><g><title>main(15)&quot; (2,780 samples, 0.39%)</title><rect x="41.4283%" y="116" width="0.3908%" height="15" fill="rgb(219,133,21)" fg:x="294716" fg:w="2780"/><text x="41.6783%" y="126.50"></text></g><g><title>&lt;module&gt; (&lt;string&gt;:1) (2,780 samples, 0.39%)</title><rect x="41.4283%" y="132" width="0.3908%" height="15" fill="rgb(246,46,29)" fg:x="294716" fg:w="2780"/><text x="41.6783%" y="142.50"></text></g><g><title>main (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/resource_tracker.py:346) (2,780 samples, 0.39%)</title><rect x="41.4283%" y="148" width="0.3908%" height="15" fill="rgb(246,185,52)" fg:x="294716" fg:w="2780"/><text x="41.6783%" y="158.50"></text></g><g><title>process 29027:&quot;/home/wynand/git/simba/.venv/bin/python -c from multiprocessing.resource_tracker import main (2,323 samples, 0.33%)</title><rect x="41.8191%" y="84" width="0.3265%" height="15" fill="rgb(252,136,11)" fg:x="297496" fg:w="2323"/><text x="42.0691%" y="94.50"></text></g><g><title>main(16)&quot; (2,323 samples, 0.33%)</title><rect x="41.8191%" y="100" width="0.3265%" height="15" fill="rgb(219,138,53)" fg:x="297496" fg:w="2323"/><text x="42.0691%" y="110.50"></text></g><g><title>&lt;module&gt; (&lt;string&gt;:1) (2,323 samples, 0.33%)</title><rect x="41.8191%" y="116" width="0.3265%" height="15" fill="rgb(211,51,23)" fg:x="297496" fg:w="2323"/><text x="42.0691%" y="126.50"></text></g><g><title>main (/home/wynand/.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/multiprocessing/resource_tracker.py:346) (2,323 samples, 0.33%)</title><rect x="41.8191%" y="132" width="0.3265%" height="15" fill="rgb(247,221,28)" fg:x="297496" fg:w="2323"/><text x="42.0691%" y="142.50"></text></g><g><title>all (711,388 samples, 100%)</title><rect x="0.0000%" y="52" width="100.0000%" height="15" fill="rgb(251,222,45)" fg:x="0" fg:w="711388"/><text x="0.2500%" y="62.50"></text></g><g><title>process 29020:&quot;python utils/udp_processor.py&quot; (711,388 samples, 100.00%)</title><rect x="0.0000%" y="68" width="100.0000%" height="15" fill="rgb(217,162,53)" fg:x="0" fg:w="711388"/><text x="0.2500%" y="78.50">process 29020:&quot;python utils/udp_processor.py&quot;</text></g></svg></svg>
