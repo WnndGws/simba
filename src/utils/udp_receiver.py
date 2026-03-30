@@ -40,9 +40,18 @@ def udp_receiver(
     shared_memory_size: int = 100 * 1024 * 1024,
 ):
     # Create named shared memory visible to other programs
-    shm = shared_memory.SharedMemory(
-        create=True, size=shared_memory_size, name=shared_memory_name
-    )
+    try:
+        shm = shared_memory.SharedMemory(
+            create=True, size=shared_memory_size, name=shared_memory_name
+        )
+    except FileExistsError:
+        shm = shared_memory.SharedMemory(
+            create=False, size=shared_memory_size, name=shared_memory_name
+        )
+        shm.unlink()
+        shm = shared_memory.SharedMemory(
+            create=True, size=shared_memory_size, name=shared_memory_name
+        )
 
     # Without offset, the code could not index into the correct position in the raw byte buffer to store packet metadata and payload separately.
     # Simple header: [offset:4][length:4][ready:1] per packet slot
@@ -55,14 +64,17 @@ def udp_receiver(
     sock.bind((ip, port))
 
     while True:
-        data, addr = sock.recvfrom(65535)
-        if not data:
-            continue
-        offset = write_idx * slot_size
+        try:
+            data, addr = sock.recvfrom(65535)
+            if not data:
+                continue
+            offset = write_idx * slot_size
 
-        # Write atomically: length + data + ready flag
-        shm.buf[offset : offset + 4] = struct.pack("I", len(data))
-        shm.buf[offset + 4 : offset + 4 + len(data)] = data
-        shm.buf[offset + 4 + 65535] = 1  # Ready flag
+            # Write atomically: length + data + ready flag
+            shm.buf[offset : offset + 4] = struct.pack("I", len(data))
+            shm.buf[offset + 4 : offset + 4 + len(data)] = data
+            shm.buf[offset + 4 + 65535] = 1  # Ready flag
 
-        write_idx = (write_idx + 1) % max_slots
+            write_idx = (write_idx + 1) % max_slots
+        except KeyboardInterrupt:
+            break

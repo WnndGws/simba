@@ -25,19 +25,24 @@ def process_named_shared_memory(
     read_idx = 0
 
     while True:
-        offset = read_idx * slot_size
-        ready = shm.buf[offset + 4 + 65535]
+        try:
+            offset = read_idx * slot_size
+            ready = shm.buf[offset + 4 + 65535]
 
-        if ready == 1:
-            length = struct.unpack("I", shm.buf[offset : offset + 4])[0]
-            data = bytes(shm.buf[offset + 4 : offset + 4 + length])
+            if ready == 1:
+                length = struct.unpack("I", shm.buf[offset : offset + 4])[0]
+                data = bytes(shm.buf[offset + 4 : offset + 4 + length])
 
-            # Clear flag and process
-            shm.buf[offset + 4 + 65535] = 0
-            output_queue.put_nowait(decode_udp(data, length))
-            read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
-        else:
-            time.sleep(0.01)  # Backoff when empty
+                # Clear flag and process
+                shm.buf[offset + 4 + 65535] = 0
+                output_queue.put_nowait(decode_udp(data, length))
+                read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
+            else:
+                time.sleep(0.01)  # Backoff when empty
+        except KeyboardInterrupt:
+            shm.unlink()
+            shm.close()
+            break
 
 
 def decode_udp(packet: bytes, length: int):
