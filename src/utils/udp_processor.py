@@ -5,6 +5,8 @@
 ## Check `skeletons/tools/py` for a list of currently preferred tools
 """
 
+import asyncio
+import copy
 import struct
 import time
 from multiprocessing import Process, Queue, shared_memory
@@ -15,7 +17,60 @@ from models import udp_protocol
 from utils import udp_collector, udp_receiver
 
 
-def process_named_shared_memory(
+async def async_process_named_shared_memory(
+    output_queue: asyncio.Queue,
+    shared_memory_name: str = "udp_queue",
+    shared_memory_size: int = 100 * 1024 * 1024,
+    poll_delay: float = 0.01,
+):
+    # the same as synchronous until snapshot
+    shm = shared_memory.SharedMemory(name=shared_memory_name)
+    slot_size = 65535 + 9
+    read_idx = 0
+
+    while True:
+        try:
+            offset = read_idx * slot_size
+            ready = shm.buf[offset + 4 + 65535]
+
+            if ready == 1:
+                length = struct.unpack("I", shm.buf[offset : offset + 4])[0]
+                data = bytes(shm.buf[offset + 4 : offset + 4 + length])
+
+                # Clear flag and process
+                shm.buf[offset + 4 + 65535] = 0
+
+                # Global dicts used in udp_collector updated and readable
+                decode_udp(data, length)
+
+                # publish snapshot (deep copy to avoid races)
+                snapshot = {
+                    "session": copy.deepcopy(udp_collector.collected_session),
+                    "player_cars": copy.deepcopy(udp_collector.collected_player_cars),
+                    "ai_cars": copy.deepcopy(udp_collector.collected_ai_cars),
+                }
+
+                # best-effort publish; if queue is full drop (non-blocking)
+                try:
+                    publish_queue.put_nowait(snapshot)
+                except asyncio.QueueFull:
+                    # backpressure policy: drop this snapshot
+                    pass
+
+                read_idx = (read_idx + 1) % max_slots
+            else:
+                await asyncio.sleep(poll_delay)
+        except asyncio.CancelledError:
+            # Called on shutdown
+            pass
+        finally:
+            try:
+                shm.close()
+            except Exception:
+                pass
+
+
+def synchronously_process_named_shared_memory(
     output_queue: Queue,
     shared_memory_name: str = "udp_queue",
     shared_memory_size: int = 100 * 1024 * 1024,
