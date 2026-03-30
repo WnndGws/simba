@@ -69,6 +69,8 @@ async def async_process_named_shared_memory(
             except Exception:
                 pass
 
+
+def synchronously_process_named_shared_memory(
     output_queue: Queue,
     shared_memory_name: str = "udp_queue",
     shared_memory_size: int = 100 * 1024 * 1024,
