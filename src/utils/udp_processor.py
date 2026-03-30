@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue, shared_memory
 from loguru import logger
 
 from models import udp_protocol
-from utils import udp_receiver, udp_to_influx
+from utils import udp_collector, udp_receiver
 
 
 def process_named_shared_memory(
@@ -46,40 +46,40 @@ def process_named_shared_memory(
 
 
 def decode_udp(packet: bytes, length: int):
-    udp_to_influx.handle_header(packet)
+    udp_collector.handle_header(packet)
     match length:
         case 1349:
-            udp_to_influx.handle_motion(packet)
+            udp_collector.handle_motion(packet)
         case 753:
-            udp_to_influx.handle_session(packet)
+            udp_collector.handle_session(packet)
         case 1285:
-            udp_to_influx.handle_lapdata(packet)
+            udp_collector.handle_lapdata(packet)
         case 45:
-            udp_to_influx.handle_event(packet)
+            udp_collector.handle_event(packet)
         case 1284:
-            udp_to_influx.handle_participants(packet)
+            udp_collector.handle_participants(packet)
         case 1133:
-            udp_to_influx.handle_setups(packet)
+            udp_collector.handle_setups(packet)
         case 1352:
-            udp_to_influx.handle_telemetry(packet)
+            udp_collector.handle_telemetry(packet)
         case 1239:
-            udp_to_influx.handle_status(packet)
+            udp_collector.handle_status(packet)
         case 1042:
-            udp_to_influx.handle_classification(packet)
+            udp_collector.handle_classification(packet)
         case 954:
-            udp_to_influx.handle_lobby(packet)
+            udp_collector.handle_lobby(packet)
         case 1041:
-            udp_to_influx.handle_damage(packet)
+            udp_collector.handle_damage(packet)
         case 1460:
-            udp_to_influx.handle_sessionhistory(packet)
+            udp_collector.handle_sessionhistory(packet)
         case 231:
-            udp_to_influx.handle_tyresets(packet)
+            udp_collector.handle_tyresets(packet)
         case 273:
-            udp_to_influx.handle_exmotion(packet)
+            udp_collector.handle_exmotion(packet)
         case 101:
             pass
         case 1131:
-            udp_to_influx.handle_positionhistory(packet)
+            udp_collector.handle_positionhistory(packet)
         case _:
             pass
 

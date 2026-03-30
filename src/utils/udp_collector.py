@@ -5,11 +5,11 @@
 ## Check `skeletons/tools/py` for a list of currently preferred tools
 """
 
-import atexit  # CHANGED
-import os  # CHANGED
-from concurrent.futures import ProcessPoolExecutor  # CHANGED
+import atexit
+import os
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
-from multiprocessing import get_context  # CHANGED
+from multiprocessing import get_context
 
 from rich import print
 
@@ -45,7 +45,6 @@ def _prepare_item(idx, item, prefix, player1_idx, player2_idx):
         dest = f"{prefix}_{name}"
         result[dest] = value
 
-    # set aaa_car_idx similar to previous logic
     if idx == player1_idx:
         result["aaa_car_idx"] = player1_idx
     elif idx == player2_idx:
@@ -56,9 +55,8 @@ def _prepare_item(idx, item, prefix, player1_idx, player2_idx):
     return idx, result
 
 
-# CHANGED: persistent process pool (lazy init) to avoid creating a pool on every call
-_pool = None  # CHANGED
-_pool_ctx = get_context("spawn")  # CHANGED
+_pool = None
+_pool_ctx = get_context("spawn")
 
 
 def _init_pool(max_workers: int = None):
@@ -70,10 +68,8 @@ def _init_pool(max_workers: int = None):
     suggested = max(1, int(cpu / 2))
     max_workers = max_workers or suggested
     # Use ProcessPoolExecutor via the spawn context for compatibility
-    _pool = ProcessPoolExecutor(
-        max_workers=max_workers, mp_context=_pool_ctx
-    )  # CHANGED
-    atexit.register(_shutdown_pool)  # CHANGED
+    _pool = ProcessPoolExecutor(max_workers=max_workers, mp_context=_pool_ctx)
+    atexit.register(_shutdown_pool)
     return _pool
 
 
@@ -90,7 +86,6 @@ def _shutdown_pool():
 update_count = 0
 
 
-# CHANGED: use the persistent pool instead of creating one per call
 def update_cars_data(itterable, prefix: str):
     """Parallelize per-car mapping/processing in worker processes and then
     merge the updates back into the global collected_* dictionaries.
@@ -111,7 +106,6 @@ def update_cars_data(itterable, prefix: str):
 
     pool = _init_pool()
 
-    # Use map-style execution on the existing pool
     # Note: ProcessPoolExecutor.map preserves order; starmap equivalent via generator
     futures = []
     for a in args:
@@ -129,12 +123,11 @@ def update_cars_data(itterable, prefix: str):
             # if AI range possibly out-of-bounds fallback to existing dicts guard
             dict_item = collected_ai_cars.get(idx, {})
 
-        # update only keys that exist in target dict (preserve original behavior)
+        # update only keys that exist in target dict
         for k, v in upd.items():
             if k in dict_item:
                 dict_item[k] = v
 
-        # maintain original print for player 1 (as was in original code)
         if idx == cached_values.player1_car_index:
             global update_count
             update_count += 1
