@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue, shared_memory
 from loguru import logger
 
 from models import udp_protocol
-from utils import udp_receiver
+from utils import udp_receiver, udp_to_influx
 
 
 def process_named_shared_memory(
@@ -25,60 +25,63 @@ def process_named_shared_memory(
     read_idx = 0
 
     while True:
-        offset = read_idx * slot_size
-        ready = shm.buf[offset + 4 + 65535]
+        try:
+            offset = read_idx * slot_size
+            ready = shm.buf[offset + 4 + 65535]
 
-        if ready == 1:
-            length = struct.unpack("I", shm.buf[offset : offset + 4])[0]
-            data = bytes(shm.buf[offset + 4 : offset + 4 + length])
+            if ready == 1:
+                length = struct.unpack("I", shm.buf[offset : offset + 4])[0]
+                data = bytes(shm.buf[offset + 4 : offset + 4 + length])
 
-            # Clear flag and process
-            shm.buf[offset + 4 + 65535] = 0
-            output_queue.put_nowait(decode_udp(data, length))
-            read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
-        else:
-            time.sleep(0.01)  # Backoff when empty
+                # Clear flag and process
+                shm.buf[offset + 4 + 65535] = 0
+                output_queue.put_nowait(decode_udp(data, length))
+                read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
+            else:
+                time.sleep(0.01)  # Backoff when empty
+        except KeyboardInterrupt:
+            shm.unlink()
+            shm.close()
+            break
 
 
 def decode_udp(packet: bytes, length: int):
-    header = udp_protocol.Header.decode(packet)
+    udp_to_influx.handle_header(packet)
     match length:
         case 1349:
-            values = udp_protocol.MotionPacket.decode(packet)
+            udp_to_influx.handle_motion(packet)
         case 753:
-            values = udp_protocol.SessionPacket.decode(packet)
+            udp_to_influx.handle_session(packet)
         case 1285:
-            values = udp_protocol.LapdataPacket.decode(packet)
+            udp_to_influx.handle_lapdata(packet)
         case 45:
-            values = udp_protocol.EventPacket.decode(packet)
+            udp_to_influx.handle_event(packet)
         case 1284:
-            values = udp_protocol.ParticipantsPacket.decode(packet)
+            udp_to_influx.handle_participants(packet)
         case 1133:
-            values = udp_protocol.SetupPacket.decode(packet)
+            udp_to_influx.handle_setups(packet)
         case 1352:
-            values = udp_protocol.TelemetryPacket.decode(packet)
+            udp_to_influx.handle_telemetry(packet)
         case 1239:
-            values = udp_protocol.StatusPacket.decode(packet)
+            udp_to_influx.handle_status(packet)
         case 1042:
-            values = udp_protocol.ClassificationPacket.decode(packet)
+            udp_to_influx.handle_classification(packet)
         case 954:
-            values = udp_protocol.LobbyPacket.decode(packet)
+            udp_to_influx.handle_lobby(packet)
         case 1041:
-            values = udp_protocol.DamagePacket.decode(packet)
+            udp_to_influx.handle_damage(packet)
         case 1460:
-            values = udp_protocol.SessionHistoryPacket.decode(packet)
+            udp_to_influx.handle_sessionhistory(packet)
         case 231:
-            values = udp_protocol.TyreSetsPacket.decode(packet)
+            udp_to_influx.handle_tyresets(packet)
         case 273:
-            values = udp_protocol.TyreSetsPacket.decode(packet)
+            udp_to_influx.handle_exmotion(packet)
         case 101:
-            values = udp_protocol.TimeTrialPacket.decode(packet)
+            pass
         case 1131:
-            values = udp_protocol.TimeTrialPacket.decode(packet)
+            udp_to_influx.handle_positionhistory(packet)
         case _:
-            values = None
-
-    return (header, values)
+            pass
 
 
 if __name__ == "__main__":
