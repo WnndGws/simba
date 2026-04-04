@@ -44,7 +44,7 @@ async def start_udp_processor():
         # simple test consumer: print a tick every snapshot
         while True:
             snap = await q.get()
-            print("snapshot tick", list(snap["player_cars"].keys()))
+            print("snapshot tick", list(snap["player_cars"]['aaa_car_idx'])
     finally:
         task.cancel()
         await task
