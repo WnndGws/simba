@@ -131,7 +131,6 @@ def update_cars_data(itterable, prefix: str):
         if idx == cached_values.player1_car_index:
             global update_count
             update_count += 1
-            print(f"updated {update_count} times")
 
 
 ### ------------ ###
