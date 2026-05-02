@@ -9,7 +9,7 @@ import struct
 import sys
 from dataclasses import asdict, dataclass, field
 from itertools import batched, islice
-from typing import ClassVar
+from typing import ClassVar, Self
 
 from rich import print
 
@@ -169,7 +169,7 @@ class Header:
     player2_car_index: int
 
     @classmethod
-    def decode(cls, packet: bytes, offset: int = 0) -> dict:
+    def decode(cls, packet: bytes, offset: int = 0) -> Self:
         mem = memoryview(packet)
         values = HEADER_STRUCT.unpack(mem[:29])
         return {
