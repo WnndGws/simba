@@ -173,7 +173,7 @@ class Header:
         mem = memoryview(packet)
         values = HEADER_STRUCT.unpack(mem[:29])
         return cls(
-            k: (str(v) if k == "session_uuid" else v)
+            k= (str(v) if k == "session_uuid" else v)
             for k, v in asdict(cls(*values)).items()
             )
 
