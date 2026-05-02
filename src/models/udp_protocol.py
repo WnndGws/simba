@@ -172,10 +172,10 @@ class Header:
     def decode(cls, packet: bytes, offset: int = 0) -> Self:
         mem = memoryview(packet)
         values = HEADER_STRUCT.unpack(mem[:29])
-        return {
+        return cls(
             k: (str(v) if k == "session_uuid" else v)
             for k, v in asdict(cls(*values)).items()
-        }
+            )
 
 
 ## --------------------- ##
