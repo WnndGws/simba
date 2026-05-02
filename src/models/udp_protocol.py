@@ -7,7 +7,7 @@
 
 import struct
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from itertools import batched, islice
 from typing import ClassVar
 
@@ -339,7 +339,7 @@ class SessionPacket:
     affects_licence_level_solo: int | str
     affects_licence_level_multiplayer: int | str
     number_of_sessions_in_weekend: int
-    weekend_structure: [int]
+    weekend_structure: list[int]
     sector_2_start_distance_m: float
     sector_3_start_distance_m: float
 
