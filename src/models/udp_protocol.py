@@ -206,9 +206,9 @@ class Motion:
     roll_radians: float
 
 
-@dataclass
+@dataclass(slots=True)
 class MotionPacket:
-    cars: list[Motion]
+    cars: list[Motion] = field(default_factory=list[Motion * 22])
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29) -> dict:
