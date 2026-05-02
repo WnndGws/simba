@@ -171,7 +171,8 @@ class Header:
     @classmethod
     def decode(cls, packet: bytes, offset: int = 0) -> Self:
         mem = memoryview(packet)
-        values = HEADER_STRUCT.unpack(mem[:29])
+        values = list(HEADER_STRUCT.unpack(mem[:29]))
+        print(values)
         values[6] = str(values[6])
         return cls(*values)
 
