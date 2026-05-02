@@ -155,18 +155,18 @@ HEADER_STRUCT = struct.Struct("<HBBBBBQfIIBB")
 
 @dataclass(slots=True)
 class Header:
-    packet_format: int
-    game_year: int
-    game_major_version: int
-    game_minor_version: int
-    packet_version: int
-    packet_id: int
-    session_uuid: str
-    session_time: float
-    frame_id: int
-    overall_frame: int
-    player_car_index: int
-    player2_car_index: int
+    packet_format: int = 0
+    game_year: int = 0
+    game_major_version: int = 0
+    game_minor_version: int = 0
+    packet_version: int = 0
+    packet_id: int = 0
+    session_uuid: str = ""
+    session_time: float = 0.0
+    frame_id: int = 0
+    overall_frame: int = 0
+    player_car_index: int = 0
+    player2_car_index: int = 0
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 0) -> Self:
