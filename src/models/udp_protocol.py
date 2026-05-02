@@ -217,12 +217,12 @@ class MotionPacket:
         length_of_data = 18
         number_of_repeats = 22
         decoded = [
-            asdict(Motion(*chunk))
+            Motion(*chunk)
             for chunk in islice(
                 batched(values, length_of_data, strict=True), number_of_repeats
             )
         ]
-        return asdict(cls(decoded))
+        return cls(*decoded)
 
 
 ## ---------------------- ##
