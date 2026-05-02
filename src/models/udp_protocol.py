@@ -153,7 +153,7 @@ damage_decode_mapping = {
 HEADER_STRUCT = struct.Struct("<HBBBBBQfIIBB")
 
 
-@dataclass
+@dataclass(slots=True)
 class Header:
     packet_format: int
     game_year: int
