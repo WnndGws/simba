@@ -161,7 +161,7 @@ class Header:
     game_minor_version: int
     packet_version: int
     packet_id: int
-    session_uuid: int | str
+    session_uuid: str
     session_time: float
     frame_id: int
     overall_frame: int
@@ -172,10 +172,7 @@ class Header:
     def decode(cls, packet: bytes, offset: int = 0) -> Self:
         mem = memoryview(packet)
         values = HEADER_STRUCT.unpack(mem[:29])
-        return cls(
-            k= (str(v) if k == "session_uuid" else v)
-            for k, v in asdict(cls(*values)).items()
-            )
+        return cls(*values)
 
 
 ## --------------------- ##
