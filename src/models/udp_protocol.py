@@ -120,91 +120,91 @@ class Marshalzone:
 
 @dataclass
 class Weather:
-    session_type: str
+    session_type: str = ""
     time_offset: int
-    weather: str
+    weather: str = ""
     track_temp_c: int
-    track_temp_change_c: str
+    track_temp_change_c: str = ""
     air_temp_c: int
-    air_temp_change_c: str
+    air_temp_change_c: str = ""
     rain_percentage: int
 
 
 @dataclass
 class SessionPacket:
-    weather: str
+    weather: str = ""
     track_temp_c: int
     air_temp_c: int
     total_race_laps: int
     track_length_m: int
-    session_type: str
-    track_id: str
-    formula: str
+    session_type: str = ""
+    track_id: str = ""
+    formula: str = ""
     session_time_remaining_seconds: int
     session_duration_seconds: int
     pit_speed_limit_kph: int
     game_paused: int
     is_spectating: int
     spectator_car_index: int
-    sli_pro_native_support: str
+    sli_pro_native_support: str = ""
     number_of_marshal_zones: int
     list_of_marshal_zones: list[Marshalzone]
-    safety_car_status: str
-    network_game: str
+    safety_car_status: str = ""
+    network_game: str = ""
     number_of_weather_forecast_samples: int
     weather_forecasts: list[Weather]
-    weather_forecast_accuracy: str
+    weather_forecast_accuracy: str = ""
     ai_difficulty_level: int
-    season_link_id: str
-    weekend_link_id: str
-    session_link_id: str
+    season_link_id: str = ""
+    weekend_link_id: str = ""
+    session_link_id: str = ""
     pit_stop_ideal_lap: int
     pit_stop_latest_lap: int
     pit_stop_rejoin_position: int
-    steering_assist: str
-    braking_assist: str
-    gearbox_assist: str
-    pit_assist: str
-    pit_release_assist: str
-    ers_assist: str
-    drs_assist: str
-    dynamic_racing_line: str
-    dynamic_racing_line_type: str
+    steering_assist: str = ""
+    braking_assist: str = ""
+    gearbox_assist: str = ""
+    pit_assist: str = ""
+    pit_release_assist: str = ""
+    ers_assist: str = ""
+    drs_assist: str = ""
+    dynamic_racing_line: str = ""
+    dynamic_racing_line_type: str = ""
     game_mode: int
     ruleset: int
     time_of_day: int
-    session_length: str
-    speed_units_player1: str
-    temp_units_player1: str
-    speed_units_player2: str
-    temp_units_player2: str
+    session_length: str = ""
+    speed_units_player1: str = ""
+    temp_units_player1: str = ""
+    speed_units_player2: str = ""
+    temp_units_player2: str = ""
     number_of_safetycar_incidents: int
     number_of_virtualsafetycar_incidents: int
     number_of_red_flags: int
-    equal_car_performance: str
-    recovery_mode: str
-    flashback_limit: str
-    surface_type: str
-    low_fuel_mode: str
-    race_starts: str
-    tyre_temps: str
-    pit_lane_tyre_sim: str
-    car_damage: str
-    car_damage_rate: str
-    collisions: str
-    collisions_first_lap_only: str
-    multiplayer_unsafe_pit_release: str
-    multiplayer_kick_for_griefing: str
-    corner_cutting_stringency: str
-    parc_ferme: str
-    pit_stop_experience: str
-    safety_car: str
-    safety_car_experience: str
-    formation_lap: str
-    formation_lap_experience: str
-    red_flags: str
-    affects_licence_level_solo: str
-    affects_licence_level_multiplayer: str
+    equal_car_performance: str = ""
+    recovery_mode: str = ""
+    flashback_limit: str = ""
+    surface_type: str = ""
+    low_fuel_mode: str = ""
+    race_starts: str = ""
+    tyre_temps: str = ""
+    pit_lane_tyre_sim: str = ""
+    car_damage: str = ""
+    car_damage_rate: str = ""
+    collisions: str = ""
+    collisions_first_lap_only: str = ""
+    multiplayer_unsafe_pit_release: str = ""
+    multiplayer_kick_for_griefing: str = ""
+    corner_cutting_stringency: str = ""
+    parc_ferme: str = ""
+    pit_stop_experience: str = ""
+    safety_car: str = ""
+    safety_car_experience: str = ""
+    formation_lap: str = ""
+    formation_lap_experience: str = ""
+    red_flags: str = ""
+    affects_licence_level_solo: str = ""
+    affects_licence_level_multiplayer: str = ""
     number_of_sessions_in_weekend: int
     weekend_structure: list[int]
     sector_2_start_distance_m: float
