@@ -220,8 +220,8 @@ class SessionPacket:
         decoded.extend(values[idx] for idx in range(16))
 
         list_of_marshal_zones = [
-            Marshalzone(*chunk)
-            for chunk in islice(batched(values[16:], 2, strict=True), 21)
+            Marshalzone(_a, _b)
+            for _a, _b in islice(batched(values[16:], 2, strict=True), 21)
         ]
         decoded.append(list_of_marshal_zones)
 
