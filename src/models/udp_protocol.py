@@ -77,7 +77,7 @@ class Header:
 MOTION_STRUCT = struct.Struct("<" + ("ffffffhhhhhhffffff" * 22))
 
 
-@dataclass
+@dataclass(slots=True)
 class Motion:
     world_position_x: float = 0.0
     world_position_y: float = 0.0
