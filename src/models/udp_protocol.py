@@ -133,34 +133,34 @@ class Weather:
 @dataclass
 class SessionPacket:
     weather: str = ""
-    track_temp_c: int
-    air_temp_c: int
-    total_race_laps: int
-    track_length_m: int
+    track_temp_c: int = 0
+    air_temp_c: int = 0
+    total_race_laps: int = 0
+    track_length_m: int = 0
     session_type: str = ""
     track_id: str = ""
     formula: str = ""
-    session_time_remaining_seconds: int
-    session_duration_seconds: int
-    pit_speed_limit_kph: int
-    game_paused: int
-    is_spectating: int
-    spectator_car_index: int
+    session_time_remaining_seconds: int = 0
+    session_duration_seconds: int = 0
+    pit_speed_limit_kph: int = 0
+    game_paused: int = 0
+    is_spectating: int = 0
+    spectator_car_index: int = 0
     sli_pro_native_support: str = ""
-    number_of_marshal_zones: int
+    number_of_marshal_zones: int = 0
     list_of_marshal_zones: list[Marshalzone]
     safety_car_status: str = ""
     network_game: str = ""
-    number_of_weather_forecast_samples: int
+    number_of_weather_forecast_samples: int = 0
     weather_forecasts: list[Weather]
     weather_forecast_accuracy: str = ""
-    ai_difficulty_level: int
+    ai_difficulty_level: int = 0
     season_link_id: str = ""
     weekend_link_id: str = ""
     session_link_id: str = ""
-    pit_stop_ideal_lap: int
-    pit_stop_latest_lap: int
-    pit_stop_rejoin_position: int
+    pit_stop_ideal_lap: int = 0
+    pit_stop_latest_lap: int = 0
+    pit_stop_rejoin_position: int = 0
     steering_assist: str = ""
     braking_assist: str = ""
     gearbox_assist: str = ""
@@ -170,17 +170,17 @@ class SessionPacket:
     drs_assist: str = ""
     dynamic_racing_line: str = ""
     dynamic_racing_line_type: str = ""
-    game_mode: int
-    ruleset: int
-    time_of_day: int
+    game_mode: int = 0
+    ruleset: int = 0
+    time_of_day: int = 0
     session_length: str = ""
     speed_units_player1: str = ""
     temp_units_player1: str = ""
     speed_units_player2: str = ""
     temp_units_player2: str = ""
-    number_of_safetycar_incidents: int
-    number_of_virtualsafetycar_incidents: int
-    number_of_red_flags: int
+    number_of_safetycar_incidents: int = 0
+    number_of_virtualsafetycar_incidents: int = 0
+    number_of_red_flags: int = 0
     equal_car_performance: str = ""
     recovery_mode: str = ""
     flashback_limit: str = ""
@@ -205,10 +205,10 @@ class SessionPacket:
     red_flags: str = ""
     affects_licence_level_solo: str = ""
     affects_licence_level_multiplayer: str = ""
-    number_of_sessions_in_weekend: int
+    number_of_sessions_in_weekend: int = 0
     weekend_structure: list[int]
-    sector_2_start_distance_m: float
-    sector_3_start_distance_m: float
+    sector_2_start_distance_m: float = 0.0
+    sector_3_start_distance_m: float = 0.0
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29):
