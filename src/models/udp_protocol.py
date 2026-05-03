@@ -233,9 +233,9 @@ class SessionPacket:
                 _b,
                 decode_dictionaries.weather_forecast_dict[_c],
                 _d,
-                _e,
+                decode_dictionaries.weather_forecast_change_dict[_e],
                 _f,
-                _g,
+                decode_dictionaries.weather_forecast_change_dict[_g],
                 _h,
             )
             for _a, _b, _c, _d, _e, _f, _g, _h in islice(
