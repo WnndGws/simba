@@ -121,13 +121,13 @@ class Marshalzone:
 @dataclass
 class Weather:
     session_type: str = ""
-    time_offset: int
+    time_offset: int = 0
     weather: str = ""
-    track_temp_c: int
+    track_temp_c: int = 0
     track_temp_change_c: str = ""
-    air_temp_c: int
+    air_temp_c: int = 0
     air_temp_change_c: str = ""
-    rain_percentage: int
+    rain_percentage: int = 0
 
 
 @dataclass
@@ -228,8 +228,19 @@ class SessionPacket:
         decoded.extend(values[idx + 16 + 42] for idx in range(3))
 
         list_of_weather = [
-            decode_decoded_enums(Weather(*chunk), weather_decode_mapping)
-            for chunk in islice(batched(values[61:], 8, strict=True), 64)
+            Weather(
+                decode_dictionaries.sessiontype_dict[_a],
+                _b,
+                decode_dictionaries.weather_forecast_dict[_c],
+                _d,
+                _e,
+                _f,
+                _g,
+                _h,
+            )
+            for _a, _b, _c, _d, _e, _f, _g, _h in islice(
+                batched(values[61:], 8, strict=True), 64
+            )
         ]
         decoded.append(list_of_weather)
 
