@@ -277,19 +277,19 @@ class SessionPacket:
         decoded[44] = dd.speedunitsplayer_dict[decoded[44]]
         decoded[45] = dd.temperatureunitsplayer_dict[decoded[45]]
         decoded[49] = dd.equalcarperformance_dict[decoded[49]]
-        decoded[50] = recovery_mode: str = ""
-        decoded[51] = flashback_limit: str = ""
-        decoded[52] = surface_type: str = ""
-        decoded[53] = low_fuel_mode: str = ""
-        decoded[54] = race_starts: str = ""
-        decoded[55] = tyre_temps: str = ""
-        decoded[56] = pit_lane_tyre_sim: str = ""
-        decoded[57] = car_damage: str = ""
-        decoded[58] = car_damage_rate: str = ""
-        decoded[59] = collisions: str = ""
-        decoded[60] = collisions_first_lap_only: str = ""
-        decoded[61] = multiplayer_unsafe_pit_release: str = ""
-        decoded[62] = multiplayer_kick_for_griefing: str = ""
+        decoded[50] = dd.recoverymode_dict[decoded[50]]
+        decoded[51] = dd.flashbacklimit_dict[decoded[51]]
+        decoded[52] = dd.surfacetype_dict[decoded[52]]
+        decoded[53] = dd.lowfuelmode_dict[decoded[53]]
+        decoded[54] = dd.racestarts_dict[decoded[54]]
+        decoded[55] = dd.tyretemps_dict[decoded[55]]
+        decoded[56] = dd.pitlanetyresim_dict[decoded[56]]
+        decoded[57] = dd.cardamage_dict[decoded[57]]
+        decoded[58] = dd.cardamagerate_dict[decoded[58]]
+        decoded[59] = dd.collisions_dict[decoded[59]]
+        decoded[60] = dd.collisionsfirstlaponly_dict[decoded[60]]
+        decoded[61] = dd.mpunsafepitrelease_dict[decoded[61]]
+        decoded[62] = dd.mpoffforgriefing_dict[decoded[62]]
         decoded[63] = corner_cutting_stringency: str = ""
         decoded[64] = parc_ferme: str = ""
         decoded[65] = pit_stop_experience: str = ""
