@@ -251,25 +251,12 @@ class SessionPacket:
         decoded.append(values[-2])
         decoded.append(values[-1])
 
-        decoded[0] = dd.weather_forecast_dict[0]
-        decoded[0] = weather: str = ""
-        decoded[1] = track_temp_c: int = 0
-        decoded[2] = air_temp_c: int = 0
-        decoded[3] = total_race_laps: int = 0
-        decoded[4] = track_length_m: int = 0
-        decoded[5] = session_type: str = ""
-        decoded[6] = track_id: str = ""
-        decoded[7] = formula: str = ""
-        decoded[8] = session_time_remaining_seconds: int = 0
-        decoded[9] = session_duration_seconds: int = 0
-        decoded[10] = pit_speed_limit_kph: int = 0
-        decoded[11] = game_paused: int = 0
-        decoded[12] = is_spectating: int = 0
-        decoded[13] = spectator_car_index: int = 0
-        decoded[14] = sli_pro_native_support: str = ""
-        decoded[15] = number_of_marshal_zones: int = 0
-        decoded[16] = list_of_marshal_zones: list[Marshalzone]
-        decoded[17] = safety_car_status: str = ""
+        decoded[0] = dd.weather_forecast_dict[decoded[0]]
+        decoded[5] = dd.sessiontype_dict[decoded[5]]
+        decoded[6] = dd.track_dict[decoded[6]]
+        decoded[7] = dd.formula_dict[decoded[7]]
+        decoded[14] = dd.sli_dict[decoded[14]]
+        decoded[17] = dd.safetycarstatus_dict[decoded[17]]
         decoded[18] = network_game: str = ""
         decoded[19] = number_of_weather_forecast_samples: int = 0
         decoded[20] = weather_forecasts: list[Weather]
