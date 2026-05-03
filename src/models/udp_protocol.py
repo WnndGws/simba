@@ -257,14 +257,11 @@ class SessionPacket:
         decoded[7] = dd.formula_dict[decoded[7]]
         decoded[14] = dd.sli_dict[decoded[14]]
         decoded[17] = dd.safetycarstatus_dict[decoded[17]]
-        decoded[18] = network_game: str = ""
-        decoded[19] = number_of_weather_forecast_samples: int = 0
-        decoded[20] = weather_forecasts: list[Weather]
-        decoded[21] = weather_forecast_accuracy: str = ""
-        decoded[22] = ai_difficulty_level: int = 0
-        decoded[23] = season_link_id: str = ""
-        decoded[24] = weekend_link_id: str = ""
-        decoded[25] = session_link_id: str = ""
+        decoded[18] = dd.networkgame_dict[decoded[18]]
+        decoded[21] = dd.forecastaccuracy_dict[decoded[21]]
+        decoded[23] = str(decoded[23])
+        decoded[24] = str(decoded[24])
+        decoded[25] = str(decoded[25])
         decoded[26] = pit_stop_ideal_lap: int = 0
         decoded[27] = pit_stop_latest_lap: int = 0
         decoded[28] = pit_stop_rejoin_position: int = 0
