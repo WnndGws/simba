@@ -290,16 +290,16 @@ class SessionPacket:
         decoded[60] = dd.collisionsfirstlaponly_dict[decoded[60]]
         decoded[61] = dd.mpunsafepitrelease_dict[decoded[61]]
         decoded[62] = dd.mpoffforgriefing_dict[decoded[62]]
-        decoded[63] = corner_cutting_stringency: str = ""
-        decoded[64] = parc_ferme: str = ""
-        decoded[65] = pit_stop_experience: str = ""
-        decoded[66] = safety_car: str = ""
-        decoded[67] = safety_car_experience: str = ""
-        decoded[68] = formation_lap: str = ""
-        decoded[69] = formation_lap_experience: str = ""
-        decoded[70] = red_flags: str = ""
-        decoded[71] = affects_licence_level_solo: str = ""
-        decoded[72] = affects_licence_level_multiplayer: str = ""
+        decoded[63] = dd.cornercuttingstringency_dict[decoded[63]]
+        decoded[64] = dd.parcferme_dict[decoded[64]]
+        decoded[65] = dd.pitstopexperience_dict[decoded[65]]
+        decoded[66] = dd.safetycar_dict[decoded[66]]
+        decoded[67] = dd.safetycarexperience_dict[decoded[67]]
+        decoded[68] = dd.formationlap_dict[decoded[68]]
+        decoded[69] = dd.formationlapexperience_dict[decoded[69]]
+        decoded[70] = dd.redflags_dict[decoded[70]]
+        decoded[71] = dd.affectslicencelevelsolo_dict[decoded[71]]
+        decoded[72] = dd.affectslicencelevelmp_dict[decoded[72]]
 
         return cls(*decoded)
 
