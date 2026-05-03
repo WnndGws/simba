@@ -262,30 +262,21 @@ class SessionPacket:
         decoded[23] = str(decoded[23])
         decoded[24] = str(decoded[24])
         decoded[25] = str(decoded[25])
-        decoded[26] = pit_stop_ideal_lap: int = 0
-        decoded[27] = pit_stop_latest_lap: int = 0
-        decoded[28] = pit_stop_rejoin_position: int = 0
-        decoded[29] = steering_assist: str = ""
-        decoded[30] = braking_assist: str = ""
-        decoded[31] = gearbox_assist: str = ""
-        decoded[32] = pit_assist: str = ""
-        decoded[33] = pit_release_assist: str = ""
-        decoded[34] = ers_assist: str = ""
-        decoded[35] = drs_assist: str = ""
-        decoded[36] = dynamic_racing_line: str = ""
-        decoded[37] = dynamic_racing_line_type: str = ""
-        decoded[38] = game_mode: int = 0
-        decoded[39] = ruleset: int = 0
-        decoded[40] = time_of_day: int = 0
-        decoded[41] = session_length: str = ""
-        decoded[42] = speed_units_player1: str = ""
-        decoded[43] = temp_units_player1: str = ""
-        decoded[44] = speed_units_player2: str = ""
-        decoded[45] = temp_units_player2: str = ""
-        decoded[46] = number_of_safetycar_incidents: int = 0
-        decoded[47] = number_of_virtualsafetycar_incidents: int = 0
-        decoded[48] = number_of_red_flags: int = 0
-        decoded[49] = equal_car_performance: str = ""
+        decoded[29] = dd.steeringassist_dict[decoded[29]]
+        decoded[30] = dd.brakingassist_dict[decoded[30]]
+        decoded[31] = dd.gearboxassist_dict[decoded[31]]
+        decoded[32] = dd.pitassist_dict[decoded[32]]
+        decoded[33] = dd.pitreleaseassist_dict[decoded[33]]
+        decoded[34] = dd.ersassist_dict[decoded[34]]
+        decoded[35] = dd.drsassist_dict[decoded[35]]
+        decoded[36] = dd.dynamicracingline_dict[decoded[36]]
+        decoded[37] = dd.dynamicracinglinetype_dict[decoded[37]]
+        decoded[41] = dd.sessionlength_dict[decoded[41]]
+        decoded[42] = dd.speedunitsplayer_dict[decoded[42]]
+        decoded[43] = dd.temperatureunitsplayer_dict[decoded[43]]
+        decoded[44] = dd.speedunitsplayer_dict[decoded[44]]
+        decoded[45] = dd.temperatureunitsplayer_dict[decoded[45]]
+        decoded[49] = dd.equalcarperformance_dict[decoded[49]]
         decoded[50] = recovery_mode: str = ""
         decoded[51] = flashback_limit: str = ""
         decoded[52] = surface_type: str = ""
@@ -309,10 +300,6 @@ class SessionPacket:
         decoded[70] = red_flags: str = ""
         decoded[71] = affects_licence_level_solo: str = ""
         decoded[72] = affects_licence_level_multiplayer: str = ""
-        decoded[73] = number_of_sessions_in_weekend: int = 0
-        decoded[74] = weekend_structure: list[int]
-        decoded[75] = sector_2_start_distance_m: float = 0.0
-        decoded[76] = sector_3_start_distance_m: float = 0.0
 
         return cls(*decoded)
 
