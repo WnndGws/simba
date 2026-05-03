@@ -15,30 +15,6 @@ from rich import print
 
 from models import decode_dictionaries
 
-
-## ------------------------------- ##
-## ------ Helper Functions ------- ##
-## ------------------------------- ##
-def decode_decoded_enums(
-    name_of_class: str,
-    decode_mapping_dict: dict,
-) -> list:
-    try:
-        return {
-            k: (decode_mapping_dict[k][v] if k in decode_mapping_dict else v)
-            for k, v in asdict(name_of_class).items()
-        }
-    except KeyError:
-        for k, v in asdict(name_of_class).items():
-            if k in decode_mapping_dict:
-                try:
-                    _new = decode_mapping_dict[k][v]
-                except KeyError:
-                    print(k)
-                    print(v)
-                    print(decode_mapping_dict[k])
-
-
 ## --------------------- ##
 ## ------ HEADER ------- ##
 ## --------------------- ##
@@ -138,8 +114,8 @@ SESSION_STRUCT = struct.Struct(
 
 @dataclass
 class Marshalzone:
-    zone_start_at_lap_percentage: float
-    zone_flag_type: str
+    zone_start_at_lap_percentage: float = 0.0
+    zone_flag_type: str = ""
 
 
 @dataclass
