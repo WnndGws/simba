@@ -251,15 +251,7 @@ class SessionPacket:
         decoded.append(values[-2])
         decoded.append(values[-1])
 
-        _session = decode_decoded_enums(cls(*decoded), session_decode_mapping)
-        return {
-            k: (
-                str(v)
-                if k in ["season_link_id", "weekend_link_id", "session_link_id"]
-                else v
-            )
-            for k, v in _session.items()
-        }
+        return cls(*decoded)
 
 
 ## ---------------------- ##
