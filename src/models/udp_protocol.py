@@ -39,143 +39,6 @@ def decode_decoded_enums(
                     print(decode_mapping_dict[k])
 
 
-session_decode_mapping = {
-    "weather": decode_dictionaries.weather_forecast_dict,
-    "session_type": decode_dictionaries.sessiontype_dict,
-    "track_id": decode_dictionaries.track_dict,
-    "formula": decode_dictionaries.formula_dict,
-    "sli_pro_native_support": decode_dictionaries.sli_dict,
-    "safety_car_status": decode_dictionaries.safetycar_dict,
-    "network_game": decode_dictionaries.networkgame_dict,
-    "weather_forecast_accuracy": decode_dictionaries.forecastaccuracy_dict,
-    "steering_assist": decode_dictionaries.steeringassist_dict,
-    "braking_assist": decode_dictionaries.brakingassist_dict,
-    "gearbox_assist": decode_dictionaries.gearboxassist_dict,
-    "pit_assist": decode_dictionaries.pitassist_dict,
-    "pit_release_assist": decode_dictionaries.pitreleaseassist_dict,
-    "ers_assist": decode_dictionaries.ersassist_dict,
-    "drs_assist": decode_dictionaries.drsassist_dict,
-    "dynamic_racing_line": decode_dictionaries.dynamicracingline_dict,
-    "dynamic_racing_line_type": decode_dictionaries.dynamicracinglinetype_dict,
-    "session_length": decode_dictionaries.sessionlength_dict,
-    "speed_units_player1": decode_dictionaries.speedunitsplayer_dict,
-    "temp_units_player1": decode_dictionaries.temperatureunitsplayer_dict,
-    "speed_units_player2": decode_dictionaries.speedunitsplayer_dict,
-    "temp_units_player2": decode_dictionaries.temperatureunitsplayer_dict,
-    "equal_car_performance": decode_dictionaries.equalcarperformance_dict,
-    "recovery_mode": decode_dictionaries.recoverymode_dict,
-    "flashback_limit": decode_dictionaries.flashbacklimit_dict,
-    "surface_type": decode_dictionaries.surfacetype_dict,
-    "low_fuel_mode": decode_dictionaries.lowfuelmode_dict,
-    "race_starts": decode_dictionaries.racestarts_dict,
-    "tyre_temps": decode_dictionaries.tyretemperature_dict,
-    "pit_lane_tyre_sim": decode_dictionaries.pitlanetyresim_dict,
-    "car_damage": decode_dictionaries.cardamage_dict,
-    "car_damage_rate": decode_dictionaries.cardamagerate_dict,
-    "collisions": decode_dictionaries.collisions_dict,
-    "collisions_first_lap_only": decode_dictionaries.collisionsoffforfirstlaponly_dict,
-    "multiplayer_unsafe_pit_release": decode_dictionaries.mpunsafepitrelease_dict,
-    "multiplayer_kick_for_griefing": decode_dictionaries.mpoffforgriefing_dict,
-    "corner_cutting_stringency": decode_dictionaries.cornercuttingstringency_dict,
-    "parc_ferme": decode_dictionaries.parcfermerules_dict,
-    "pit_stop_experience": decode_dictionaries.pitstopexperience_dict,
-    "safety_car": decode_dictionaries.safetycar_dict,
-    "safety_car_experience": decode_dictionaries.safetycarexperience_dict,
-    "formation_lap": decode_dictionaries.formationlap_dict,
-    "formation_lap_experience": decode_dictionaries.formationlapexperience_dict,
-    "red_flags": decode_dictionaries.redflags_dict,
-    "affects_licence_level_solo": decode_dictionaries.affectslicencelevelsolo_dict,
-    "affects_licence_level_multiplayer": decode_dictionaries.affectslicencelevelmp_dict,
-}
-marshalzone_decode_mapping = {
-    "zone_flag_type": decode_dictionaries.marshal_zone_flag_dict
-}
-weather_decode_mapping = {
-    "session_type": decode_dictionaries.sessiontype_dict,
-    "weather": decode_dictionaries.weather_forecast_dict,
-    "track_temp_change_c": decode_dictionaries.weather_forecast_change_dict,
-    "air_temp_change_c": decode_dictionaries.weather_forecast_change_dict,
-}
-lapdata_decode_mapping = {
-    "pit_status": decode_dictionaries.pitstatus_dict,
-    "sector": decode_dictionaries.sector_dict,
-    "current_lap_invalid": decode_dictionaries.currentlapinvalid_dict,
-    "driver_status": decode_dictionaries.driverstatus_dict,
-    "result_status": decode_dictionaries.result_dict,
-}
-penalties_decode_mapping = {
-    "pentalty_type": decode_dictionaries.penaltytype_dict,
-    "infringement_type": decode_dictionaries.infringementtype_dict,
-}
-safetycar_decode_mapping = {
-    "safety_car_type": decode_dictionaries.safetycartype_dict,
-    "safety_car_status": decode_dictionaries.safetycarstatus_dict,
-}
-participants_decode_mapping = {
-    "network_telemetry_flag": decode_dictionaries.telemetry_dict,
-    "platform": decode_dictionaries.platform_dict,
-}
-telemetry_decode_mapping = {"drs": decode_dictionaries.drsstatus_dict}
-status_decode_mapping = {
-    "traction_control": decode_dictionaries.tractioncontrol_dict,
-    "anti_lock_brakes": decode_dictionaries.antilockbrakes_dict,
-    "fuel_mix": decode_dictionaries.fuelmix_dict,
-    "pit_limiter_status": decode_dictionaries.pitlimiterstatus_dict,
-    "drs_allowed": decode_dictionaries.drsallowed_dict,
-    "actual_tyre_compound": decode_dictionaries.actualtyrecompound_dict,
-    "visual_tyre_compound": decode_dictionaries.visualtyrecompound_dict,
-    "vehicle_flags_shown": decode_dictionaries.vehiclefiaflags_dict,
-    "ers_deploy_mode": decode_dictionaries.ersdeploymode_dict,
-}
-classification_decode_mapping = {
-    "result_status": decode_dictionaries.resultstatus_dict,
-    "result_reason": decode_dictionaries.resultreason_dict,
-}
-lobby_decode_mapping = {
-    "team_id": decode_dictionaries.teams_dict,
-    "nationality": decode_dictionaries.nationality_dict,
-    "platform": decode_dictionaries.platform_dict,
-    "your_telemetry": decode_dictionaries.yourtelemetry_dict,
-    "show_online_names": decode_dictionaries.showonlinenames_dict,
-    "ready_status": decode_dictionaries.readystatus_dict,
-}
-damage_decode_mapping = {
-    "drs_fault": decode_dictionaries.drsfault_dict,
-    "ers_fault": decode_dictionaries.ersfault_dict,
-    "engine_blown": decode_dictionaries.engineblown_dict,
-    "engine_seized": decode_dictionaries.engineseized_dict,
-}
-
-## --------------------- ##
-## ------ HEADER ------- ##
-## --------------------- ##
-# 29 bytes
-HEADER_STRUCT = struct.Struct("<HBBBBBQfIIBB")
-
-
-@dataclass(slots=True)
-class Header:
-    packet_format: int = 0
-    game_year: int = 0
-    game_major_version: int = 0
-    game_minor_version: int = 0
-    packet_version: int = 0
-    packet_id: int = 0
-    session_uuid: str = ""
-    session_time: float = 0.0
-    frame_id: int = 0
-    overall_frame: int = 0
-    player_car_index: int = 0
-    player2_car_index: int = 0
-
-    @classmethod
-    def decode(cls, packet: bytes, offset: int = 0) -> Self:
-        mem = memoryview(packet)
-        values = list(HEADER_STRUCT.unpack(mem[:29]))
-        values[6] = str(values[6])
-        return cls(*values)
-
-
 ## --------------------- ##
 ## ------ MOTION ------- ##
 ## --------------------- ##
@@ -186,29 +49,29 @@ MOTION_STRUCT = struct.Struct("<" + ("ffffffhhhhhhffffff" * 22))
 
 @dataclass
 class Motion:
-    world_position_x: float
-    world_position_y: float
-    world_position_z: float
-    world_velocity_x: float
-    world_velocity_y: float
-    world_velocity_z: float
-    world_forward_direction_x: int
-    world_forward_direction_y: int
-    world_forward_direction_z: int
-    world_right_direction_x: int
-    world_right_direction_y: int
-    world_right_direction_z: int
-    g_force_lateral: float
-    g_force_longitudinal: float
-    g_force_vertical: float
-    yaw_radians: float
-    pitch_radians: float
-    roll_radians: float
+    world_position_x: float = 0.0
+    world_position_y: float = 0.0
+    world_position_z: float = 0.0
+    world_velocity_x: float = 0.0
+    world_velocity_y: float = 0.0
+    world_velocity_z: float = 0.0
+    world_forward_direction_x: int = 0
+    world_forward_direction_y: int = 0
+    world_forward_direction_z: int = 0
+    world_right_direction_x: int = 0
+    world_right_direction_y: int = 0
+    world_right_direction_z: int = 0
+    g_force_lateral: float = 0.0
+    g_force_longitudinal: float = 0.0
+    g_force_vertical: float = 0.0
+    yaw_radians: float = 0.0
+    pitch_radians: float = 0.0
+    roll_radians: float = 0.0
 
 
 @dataclass(slots=True)
 class MotionPacket:
-    cars: list[Motion] = field(default_factory=list[Motion * 22])
+    cars: list[Motion]
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29) -> dict:
@@ -222,7 +85,7 @@ class MotionPacket:
                 batched(values, length_of_data, strict=True), number_of_repeats
             )
         ]
-        return cls(*decoded)
+        return cls(decoded)
 
 
 ## ---------------------- ##
@@ -246,96 +109,96 @@ SESSION_STRUCT = struct.Struct(
 @dataclass
 class Marshalzone:
     zone_start_at_lap_percentage: float
-    zone_flag_type: int | str
+    zone_flag_type: str
 
 
 @dataclass
 class Weather:
-    session_type: int | str
+    session_type: str
     time_offset: int
-    weather: int | str
+    weather: str
     track_temp_c: int
-    track_temp_change_c: int | str
+    track_temp_change_c: str
     air_temp_c: int
-    air_temp_change_c: int | str
+    air_temp_change_c: str
     rain_percentage: int
 
 
 @dataclass
 class SessionPacket:
-    weather: int | str
+    weather: str
     track_temp_c: int
     air_temp_c: int
     total_race_laps: int
     track_length_m: int
-    session_type: int | str
-    track_id: int | str
-    formula: int | str
+    session_type: str
+    track_id: str
+    formula: str
     session_time_remaining_seconds: int
     session_duration_seconds: int
     pit_speed_limit_kph: int
     game_paused: int
     is_spectating: int
     spectator_car_index: int
-    sli_pro_native_support: int | str
+    sli_pro_native_support: str
     number_of_marshal_zones: int
     list_of_marshal_zones: list[Marshalzone]
-    safety_car_status: int | str
-    network_game: int | str
+    safety_car_status: str
+    network_game: str
     number_of_weather_forecast_samples: int
     weather_forecasts: list[Weather]
-    weather_forecast_accuracy: int | str
+    weather_forecast_accuracy: str
     ai_difficulty_level: int
-    season_link_id: int | str
-    weekend_link_id: int | str
-    session_link_id: int | str
+    season_link_id: str
+    weekend_link_id: str
+    session_link_id: str
     pit_stop_ideal_lap: int
     pit_stop_latest_lap: int
     pit_stop_rejoin_position: int
-    steering_assist: int | str
-    braking_assist: int | str
-    gearbox_assist: int | str
-    pit_assist: int | str
-    pit_release_assist: int | str
-    ers_assist: int | str
-    drs_assist: int | str
-    dynamic_racing_line: int | str
-    dynamic_racing_line_type: int | str
+    steering_assist: str
+    braking_assist: str
+    gearbox_assist: str
+    pit_assist: str
+    pit_release_assist: str
+    ers_assist: str
+    drs_assist: str
+    dynamic_racing_line: str
+    dynamic_racing_line_type: str
     game_mode: int
     ruleset: int
     time_of_day: int
-    session_length: int | str
-    speed_units_player1: int | str
-    temp_units_player1: int | str
-    speed_units_player2: int | str
-    temp_units_player2: int | str
+    session_length: str
+    speed_units_player1: str
+    temp_units_player1: str
+    speed_units_player2: str
+    temp_units_player2: str
     number_of_safetycar_incidents: int
     number_of_virtualsafetycar_incidents: int
     number_of_red_flags: int
-    equal_car_performance: int | str
-    recovery_mode: int | str
-    flashback_limit: int | str
-    surface_type: int | str
-    low_fuel_mode: int | str
-    race_starts: int | str
-    tyre_temps: int | str
-    pit_lane_tyre_sim: int | str
-    car_damage: int | str
-    car_damage_rate: int | str
-    collisions: int | str
-    collisions_first_lap_only: int | str
-    multiplayer_unsafe_pit_release: int | str
-    multiplayer_kick_for_griefing: int | str
-    corner_cutting_stringency: int | str
-    parc_ferme: int | str
-    pit_stop_experience: int | str
-    safety_car: int | str
-    safety_car_experience: int | str
-    formation_lap: int | str
-    formation_lap_experience: int | str
-    red_flags: int | str
-    affects_licence_level_solo: int | str
-    affects_licence_level_multiplayer: int | str
+    equal_car_performance: str
+    recovery_mode: str
+    flashback_limit: str
+    surface_type: str
+    low_fuel_mode: str
+    race_starts: str
+    tyre_temps: str
+    pit_lane_tyre_sim: str
+    car_damage: str
+    car_damage_rate: str
+    collisions: str
+    collisions_first_lap_only: str
+    multiplayer_unsafe_pit_release: str
+    multiplayer_kick_for_griefing: str
+    corner_cutting_stringency: str
+    parc_ferme: str
+    pit_stop_experience: str
+    safety_car: str
+    safety_car_experience: str
+    formation_lap: str
+    formation_lap_experience: str
+    red_flags: str
+    affects_licence_level_solo: str
+    affects_licence_level_multiplayer: str
     number_of_sessions_in_weekend: int
     weekend_structure: list[int]
     sector_2_start_distance_m: float
@@ -348,9 +211,7 @@ class SessionPacket:
 
         decoded = []
 
-        for idx, item in enumerate(range(16)):
-            item = values[idx]
-            decoded.append(item)
+        decoded.extend(values[idx] for idx in range(16))
 
         list_of_marshal_zones = [
             decode_decoded_enums(Marshalzone(*chunk), marshalzone_decode_mapping)
