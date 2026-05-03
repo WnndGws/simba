@@ -40,6 +40,36 @@ def decode_decoded_enums(
 
 
 ## --------------------- ##
+## ------ HEADER ------- ##
+## --------------------- ##
+# 29 bytes
+HEADER_STRUCT = struct.Struct("<HBBBBBQfIIBB")
+
+
+@dataclass(slots=True)
+class Header:
+    packet_format: int = 0
+    game_year: int = 0
+    game_major_version: int = 0
+    game_minor_version: int = 0
+    packet_version: int = 0
+    packet_id: int = 0
+    session_uuid: str = ""
+    session_time: float = 0.0
+    frame_id: int = 0
+    overall_frame: int = 0
+    player_car_index: int = 0
+    player2_car_index: int = 0
+
+    @classmethod
+    def decode(cls, packet: bytes, offset: int = 0) -> Self:
+        mem = memoryview(packet)
+        values = list(HEADER_STRUCT.unpack(mem[:29]))
+        values[6] = str(values[6])
+        return cls(*values)
+
+
+## --------------------- ##
 ## ------ MOTION ------- ##
 ## --------------------- ##
 # Header 0
