@@ -314,46 +314,46 @@ LAPDATA_STRUCT = struct.Struct("<" + ("IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB" * 22) 
 
 @dataclass
 class Carlap:
-    last_lap_time_ms: int
-    current_lap_time_ms: int
-    sector1_time_ms_component: int
-    sector1_time_minutes_component: int
-    sector2_time_ms_component: int
-    sector2_time_minutes_component: int
-    delta_to_car_in_front_ms_component: int
-    delta_to_car_in_front_minutes_component: int
-    delta_to_leader_ms_component: int
-    delta_to_leader_minutes_component: int
-    lap_distance_travelled_m: float
-    session_distance_travelled_m: float
-    safety_car_delta: float
-    car_position: int
-    current_lap_number: int
-    pit_status: int | str
-    number_of_pit_stops: int
-    sector: int | str
-    current_lap_invalid: int | str
-    penalties: int
-    total_warnings: int
-    corner_cutting_warnings: int
-    number_unserved_drive_through_pens: int
-    number_unserved_stop_go_pens: int
-    grid_position: int
-    driver_status: int | str
-    result_status: int | str
-    pit_lane_timer_active: int
-    pit_lane_time_ms: int
-    pit_lane_stop_time_ms: int
-    pit_stop_must_serve_pen: int
-    fastest_speed_trap_speed_kph: float
-    fastest_speed_trap_lap: int
+    last_lap_time_ms: int = 0
+    current_lap_time_ms: int = 0
+    sector1_time_ms_component: int = 0
+    sector1_time_minutes_component: int = 0
+    sector2_time_ms_component: int = 0
+    sector2_time_minutes_component: int = 0
+    delta_to_car_in_front_ms_component: int = 0
+    delta_to_car_in_front_minutes_component: int = 0
+    delta_to_leader_ms_component: int = 0
+    delta_to_leader_minutes_component: int = 0
+    lap_distance_travelled_m: float = 0.0
+    session_distance_travelled_m: float = 0.0
+    safety_car_delta: float = 0.0
+    car_position: int = 0
+    current_lap_number: int = 0
+    pit_status: str = ""
+    number_of_pit_stops: int = 0
+    sector: str = ""
+    current_lap_invalid: str = ""
+    penalties: int = 0
+    total_warnings: int = 0
+    corner_cutting_warnings: int = 0
+    number_unserved_drive_through_pens: int = 0
+    number_unserved_stop_go_pens: int = 0
+    grid_position: int = 0
+    driver_status: str = ""
+    result_status: str = ""
+    pit_lane_timer_active: int = 0
+    pit_lane_time_ms: int = 0
+    pit_lane_stop_time_ms: int = 0
+    pit_stop_must_serve_pen: int = 0
+    fastest_speed_trap_speed_kph: float = 0.0
+    fastest_speed_trap_lap: int = 0
 
 
 @dataclass
 class LapdataPacket:
     cars: list[Carlap]
-    time_trial_pb_car_idx: int
-    rival_car_idx: int
+    time_trial_pb_car_idx: int = 0
+    rival_car_idx: int = 0
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29):
@@ -363,6 +363,7 @@ class LapdataPacket:
         number_of_repeats = 22
         decoded = []
         laps = [
+            ## TODO; clean below this
             decode_decoded_enums(Carlap(*chunk), lapdata_decode_mapping)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
