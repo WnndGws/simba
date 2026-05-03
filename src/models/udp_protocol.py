@@ -252,6 +252,83 @@ class SessionPacket:
         decoded.append(values[-1])
 
         decoded[0] = dd.weather_forecast_dict[0]
+        decoded[0] = weather: str = ""
+        decoded[1] = track_temp_c: int = 0
+        decoded[2] = air_temp_c: int = 0
+        decoded[3] = total_race_laps: int = 0
+        decoded[4] = track_length_m: int = 0
+        decoded[5] = session_type: str = ""
+        decoded[6] = track_id: str = ""
+        decoded[7] = formula: str = ""
+        decoded[8] = session_time_remaining_seconds: int = 0
+        decoded[9] = session_duration_seconds: int = 0
+        decoded[10] = pit_speed_limit_kph: int = 0
+        decoded[11] = game_paused: int = 0
+        decoded[12] = is_spectating: int = 0
+        decoded[13] = spectator_car_index: int = 0
+        decoded[14] = sli_pro_native_support: str = ""
+        decoded[15] = number_of_marshal_zones: int = 0
+        decoded[16] = list_of_marshal_zones: list[Marshalzone]
+        decoded[17] = safety_car_status: str = ""
+        decoded[18] = network_game: str = ""
+        decoded[19] = number_of_weather_forecast_samples: int = 0
+        decoded[20] = weather_forecasts: list[Weather]
+        decoded[21] = weather_forecast_accuracy: str = ""
+        decoded[22] = ai_difficulty_level: int = 0
+        decoded[23] = season_link_id: str = ""
+        decoded[24] = weekend_link_id: str = ""
+        decoded[25] = session_link_id: str = ""
+        decoded[26] = pit_stop_ideal_lap: int = 0
+        decoded[27] = pit_stop_latest_lap: int = 0
+        decoded[28] = pit_stop_rejoin_position: int = 0
+        decoded[29] = steering_assist: str = ""
+        decoded[30] = braking_assist: str = ""
+        decoded[31] = gearbox_assist: str = ""
+        decoded[32] = pit_assist: str = ""
+        decoded[33] = pit_release_assist: str = ""
+        decoded[34] = ers_assist: str = ""
+        decoded[35] = drs_assist: str = ""
+        decoded[36] = dynamic_racing_line: str = ""
+        decoded[37] = dynamic_racing_line_type: str = ""
+        decoded[38] = game_mode: int = 0
+        decoded[39] = ruleset: int = 0
+        decoded[40] = time_of_day: int = 0
+        decoded[41] = session_length: str = ""
+        decoded[42] = speed_units_player1: str = ""
+        decoded[43] = temp_units_player1: str = ""
+        decoded[44] = speed_units_player2: str = ""
+        decoded[45] = temp_units_player2: str = ""
+        decoded[46] = number_of_safetycar_incidents: int = 0
+        decoded[47] = number_of_virtualsafetycar_incidents: int = 0
+        decoded[48] = number_of_red_flags: int = 0
+        decoded[49] = equal_car_performance: str = ""
+        decoded[50] = recovery_mode: str = ""
+        decoded[51] = flashback_limit: str = ""
+        decoded[52] = surface_type: str = ""
+        decoded[53] = low_fuel_mode: str = ""
+        decoded[54] = race_starts: str = ""
+        decoded[55] = tyre_temps: str = ""
+        decoded[56] = pit_lane_tyre_sim: str = ""
+        decoded[57] = car_damage: str = ""
+        decoded[58] = car_damage_rate: str = ""
+        decoded[59] = collisions: str = ""
+        decoded[60] = collisions_first_lap_only: str = ""
+        decoded[61] = multiplayer_unsafe_pit_release: str = ""
+        decoded[62] = multiplayer_kick_for_griefing: str = ""
+        decoded[63] = corner_cutting_stringency: str = ""
+        decoded[64] = parc_ferme: str = ""
+        decoded[65] = pit_stop_experience: str = ""
+        decoded[66] = safety_car: str = ""
+        decoded[67] = safety_car_experience: str = ""
+        decoded[68] = formation_lap: str = ""
+        decoded[69] = formation_lap_experience: str = ""
+        decoded[70] = red_flags: str = ""
+        decoded[71] = affects_licence_level_solo: str = ""
+        decoded[72] = affects_licence_level_multiplayer: str = ""
+        decoded[73] = number_of_sessions_in_weekend: int = 0
+        decoded[74] = weekend_structure: list[int]
+        decoded[75] = sector_2_start_distance_m: float = 0.0
+        decoded[76] = sector_3_start_distance_m: float = 0.0
 
         return cls(*decoded)
 
