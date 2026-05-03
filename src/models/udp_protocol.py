@@ -13,7 +13,7 @@ from typing import ClassVar, Self
 
 from rich import print
 
-from models import decode_dictionaries
+from models import decode_dictionaries as dd
 
 ## --------------------- ##
 ## ------ HEADER ------- ##
@@ -220,7 +220,7 @@ class SessionPacket:
         decoded.extend(values[idx] for idx in range(16))
 
         list_of_marshal_zones = [
-            Marshalzone(_a, decode_dictionaries.marshal_zone_flag_dict(_b))
+            Marshalzone(_a, dd.marshal_zone_flag_dict(_b))
             for _a, _b in islice(batched(values[16:], 2, strict=True), 21)
         ]
         decoded.append(list_of_marshal_zones)
@@ -229,13 +229,13 @@ class SessionPacket:
 
         list_of_weather = [
             Weather(
-                decode_dictionaries.sessiontype_dict[_a],
+                dd.sessiontype_dict[_a],
                 _b,
-                decode_dictionaries.weather_forecast_dict[_c],
+                dd.weather_forecast_dict[_c],
                 _d,
-                decode_dictionaries.weather_forecast_change_dict[_e],
+                dd.weather_forecast_change_dict[_e],
                 _f,
-                decode_dictionaries.weather_forecast_change_dict[_g],
+                dd.weather_forecast_change_dict[_g],
                 _h,
             )
             for _a, _b, _c, _d, _e, _f, _g, _h in islice(
@@ -250,6 +250,8 @@ class SessionPacket:
         decoded.append(weekend_structure)
         decoded.append(values[-2])
         decoded.append(values[-1])
+
+        decoded[0] = dd.weather_forecast_dict[0]
 
         return cls(*decoded)
 
@@ -386,9 +388,7 @@ class Retirement(EventPacket):
 
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
-        values = decode_dictionaries.retirementreason_dict[
-            cls.STRUCT.unpack_from(mem, offset)
-        ]
+        values = dd.retirementreason_dict[cls.STRUCT.unpack_from(mem, offset)]
         return asdict(cls(*values))
 
 
@@ -401,9 +401,7 @@ class DrsDisabled(EventPacket):
 
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
-        (val,) = decode_dictionaries.drsdeactivatedreason_dict[
-            cls.STRUCT.unpack_from(mem, offset)
-        ]
+        (val,) = dd.drsdeactivatedreason_dict[cls.STRUCT.unpack_from(mem, offset)]
         return asdict(cls(val))
 
 
