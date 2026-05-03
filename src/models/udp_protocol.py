@@ -104,7 +104,7 @@ class MotionPacket:
     cars: list[Motion]
 
     @classmethod
-    def decode(cls, packet: bytes, offset: int = 29) -> dict:
+    def decode(cls, packet: bytes, offset: int = 29) -> Self:
         mem = memoryview(packet)
         values = MOTION_STRUCT.unpack_from(mem, offset)
         length_of_data = 18
