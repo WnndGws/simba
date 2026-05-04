@@ -841,31 +841,31 @@ CARSTATUS_STRUCT = struct.Struct("<" + "BBBBBfffHHBBHBBBbfffBfffB" * 22)
 
 @dataclass
 class Status:
-    traction_control: int | str
-    anti_lock_brakes: int | str
-    fuel_mix: int | str
-    front_brake_bias: int
-    pit_limiter_status: int | str
-    current_fuel_in_tank_kg: float
-    fuel_capacity: float
-    fuel_remaining_laps: float
-    max_rpm: int
-    idle_rpm: int
-    max_gears: int
-    drs_allowed: int | str
-    drs_activated_in_distance: int
-    actual_tyre_compound: int | str
-    visual_tyre_compound: int | str
-    tyre_age_laps: int
-    vehicle_flags_shown: int | str
-    engine_power_ice: float
-    engine_power_mguk: float
-    ers_store_energy: float
-    ers_deploy_mode: int | str
-    ers_harvested_mguk: float
-    ers_harvested_mgu_h: float
-    ers_deployed_this_lap: float
-    network_paused: int
+    traction_control: str = ""
+    anti_lock_brakes: str = ""
+    fuel_mix: str = ""
+    front_brake_bias: int = 0
+    pit_limiter_status: str = ""
+    current_fuel_in_tank_kg: float = 0.0
+    fuel_capacity: float = 0.0
+    fuel_remaining_laps: float = 0.0
+    max_rpm: int = 0
+    idle_rpm: int = 0
+    max_gears: int = 0
+    drs_allowed: str = ""
+    drs_activated_in_distance: int = 0
+    actual_tyre_compound: str = ""
+    visual_tyre_compound: str = ""
+    tyre_age_laps: int = 0
+    vehicle_flags_shown: str = ""
+    engine_power_ice: float = 0.0
+    engine_power_mguk: float = 0.0
+    ers_store_energy: float = 0.0
+    ers_deploy_mode: str = ""
+    ers_harvested_mguk: float = 0.0
+    ers_harvested_mgu_h: float = 0.0
+    ers_deployed_this_lap: float = 0.0
+    network_paused: int = 0
 
 
 @dataclass
