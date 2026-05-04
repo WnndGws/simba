@@ -367,11 +367,11 @@ class LapdataPacket:
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         for lap in laps:
-            lap[15] = dd.pitstatus_dict[lap[15]]
-            lap[17] = dd.sector_dict[lap[17]]
-            lap[18] = dd.currentlapinvalid_dict[lap[18]]
-            lap[25] = dd.driverstatus_dict[lap[25]]
-            lap[26] = dd.result_dict[lap[26]]
+            lap.pit_status = dd.pitstatus_dict[lap.pit_status]
+            lap.sector = dd.sector_dict[lap.sector]
+            lap.current_lap_invalid = dd.currentlapinvalid_dict[lap.current_lap_invalid]
+            lap.driver_status = dd.driverstatus_dict[lap.driver_status]
+            lap.result_status = dd.result_dict[lap.result_status]
 
         decoded.append(laps)
         # zero indexed
