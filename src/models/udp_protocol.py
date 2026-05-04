@@ -1340,7 +1340,7 @@ class TimeTrialPacket:
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
 
-        return asdict(cls(*setups))
+        return cls(*setups)
 
 
 ## ------------------------------- ##
