@@ -828,7 +828,7 @@ class TelemetryPacket:
         decoded.append(values[-2])
         decoded.append(values[-1])
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------- ##
