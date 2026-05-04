@@ -904,7 +904,7 @@ class StatusPacket:
 
         decoded.append(setups)
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ----------------------------------- ##
@@ -917,42 +917,42 @@ FINALCLASSIFICATION_STRUCT = struct.Struct("<" + "B" + ("BBBBBBBId" + "B" * 27) 
 
 @dataclass
 class Classification:
-    position: int
-    num_laps: int
-    grid_position: int
-    points: int
-    num_pit_stops: int
-    result_status: int | str
-    result_reason: int | str
-    best_lap_time_in_ms: int
-    total_race_time: float
-    penalties_time: int
-    num_penalties: int
-    num_tyre_stints: int
-    tyre_stint_1_actual_tyre: int
-    tyre_stint_1_visual_tyre: int
-    tyre_stint_1_end_lap: int
-    tyre_stint_2_actual_tyre: int
-    tyre_stint_2_visual_tyre: int
-    tyre_stint_2_end_lap: int
-    tyre_stint_3_actual_tyre: int
-    tyre_stint_3_visual_tyre: int
-    tyre_stint_3_end_lap: int
-    tyre_stint_4_actual_tyre: int
-    tyre_stint_4_visual_tyre: int
-    tyre_stint_4_end_lap: int
-    tyre_stint_5_actual_tyre: int
-    tyre_stint_5_visual_tyre: int
-    tyre_stint_5_end_lap: int
-    tyre_stint_6_actual_tyre: int
-    tyre_stint_6_visual_tyre: int
-    tyre_stint_6_end_lap: int
-    tyre_stint_7_actual_tyre: int
-    tyre_stint_7_visual_tyre: int
-    tyre_stint_7_end_lap: int
-    tyre_stint_8_actual_tyre: int
-    tyre_stint_8_visual_tyre: int
-    tyre_stint_8_end_lap: int
+    position: int = 0
+    num_laps: int = 0
+    grid_position: int = 0
+    points: int = 0
+    num_pit_stops: int = 0
+    result_status: str = ""
+    result_reason: str = ""
+    best_lap_time_in_ms: int = 0
+    total_race_time: float = 0.0
+    penalties_time: int = 0
+    num_penalties: int = 0
+    num_tyre_stints: int = 0
+    tyre_stint_1_actual_tyre: int = 0
+    tyre_stint_1_visual_tyre: int = 0
+    tyre_stint_1_end_lap: int = 0
+    tyre_stint_2_actual_tyre: int = 0
+    tyre_stint_2_visual_tyre: int = 0
+    tyre_stint_2_end_lap: int = 0
+    tyre_stint_3_actual_tyre: int = 0
+    tyre_stint_3_visual_tyre: int = 0
+    tyre_stint_3_end_lap: int = 0
+    tyre_stint_4_actual_tyre: int = 0
+    tyre_stint_4_visual_tyre: int = 0
+    tyre_stint_4_end_lap: int = 0
+    tyre_stint_5_actual_tyre: int = 0
+    tyre_stint_5_visual_tyre: int = 0
+    tyre_stint_5_end_lap: int = 0
+    tyre_stint_6_actual_tyre: int = 0
+    tyre_stint_6_visual_tyre: int = 0
+    tyre_stint_6_end_lap: int = 0
+    tyre_stint_7_actual_tyre: int = 0
+    tyre_stint_7_visual_tyre: int = 0
+    tyre_stint_7_end_lap: int = 0
+    tyre_stint_8_actual_tyre: int = 0
+    tyre_stint_8_visual_tyre: int = 0
+    tyre_stint_8_end_lap: int = 0
 
 
 @dataclass
@@ -968,12 +968,15 @@ class ClassificationPacket:
         length_of_data = 36
         number_of_repeats = 22
         cars = [
-            decode_decoded_enums(Classification(*chunk), classification_decode_mapping)
+            Classification(*chunk)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
+        for car in cars:
+            car.result_status = dd.resultstatus_dict[car.result_status]
+            car.result_reason = dd.resultreason_dict[car.result_reason]
         decoded.append(cars)
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------- ##
