@@ -1088,12 +1088,18 @@ class DamagePacket:
         length_of_data = 34
         number_of_repeats = 22
         setups = [
-            decode_decoded_enums(Damage(*chunk), damage_decode_mapping)
+            Damage(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
+        for setup in setups:
+            setup.drs_fault = dd.drsfault_dict[setup.drs_fault]
+            setup.ers_fault = dd.ersfault_dict[setup.ers_fault]
+            setup.engine_blown = dd.engineblown_dict[setup.engine_blown]
+            setup.engine_seized = dd.engineseized_dict[setup.engine_seized]
+
         decoded.append(setups)
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------------ ##
@@ -1143,7 +1149,7 @@ class SessionHistoryPacket:
         length_of_laps = 8
         number_of_laps = 100
         laps = [
-            asdict(LapHistory(*chunk))
+            LapHistory(*chunk)
             for chunk in islice(batched(values[7:], length_of_laps), number_of_laps)
         ]
         decoded.append(laps)
@@ -1151,11 +1157,11 @@ class SessionHistoryPacket:
         length_of_tyres = 3
         number_of_tyres = 8
         tyres = [
-            asdict(TyreHistory(*chunk))
+            TyreHistory(*chunk)
             for chunk in islice(batched(values[807:], length_of_tyres), number_of_tyres)
         ]
         decoded.append(tyres)
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------ ##
