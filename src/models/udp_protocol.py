@@ -372,6 +372,12 @@ class LapdataPacket:
         decoded.append(values[(33 * 22) + 0])
         decoded.append(values[(33 * 22) + 1])
 
+        decoded[15] = dd.pitstatus_dict[decoded[15]]
+        decoded[17] = dd.sector_dict[decoded[17]]
+        decoded[18] = dd.currentlapinvalid_dict[decoded[18]]
+        decoded[25] = dd.driverstatus_dict[decoded[25]]
+        decoded[26] = dd.result_dict[decoded[26]]
+
         return asdict(cls(*decoded))
 
 
