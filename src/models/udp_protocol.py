@@ -880,9 +880,28 @@ class StatusPacket:
         length_of_data = 25
         number_of_repeats = 22
         setups = [
-            decode_decoded_enums(Status(*chunk), status_decode_mapping)
+            Status(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
+        for setup in setups:
+            setup.traction_control = dd.tractioncontrol_dict[setup.traction_control]
+            setup.anti_lock_brakes = dd.antilockbrakes_dict[setup.anti_lock_brakes]
+            setup.fuel_mix = dd.fuelmix_dict[setup.fuel_mix]
+            setup.pit_limiter_status = dd.pitlimiterstatus_dict[
+                setup.pit_limiter_status
+            ]
+            setup.drs_allowed = dd.drsallowed_dict[setup.drs_allowed]
+            setup.actual_tyre_compound = dd.actualtyrecompound_dict[
+                setup.actual_tyre_compound
+            ]
+            setup.visual_tyre_compound = dd.visualtyrecompound_dict[
+                setup.visual_tyre_compound
+            ]
+            setup.vehicle_flags_shown = dd.vehiclefiaflags_dict[
+                setup.vehicle_flags_shown
+            ]
+            setup.ers_deploy_mode = dd.ersdeploymode_dict[setup.ers_deploy_mode]
+
         decoded.append(setups)
 
         return asdict(cls(*decoded))
