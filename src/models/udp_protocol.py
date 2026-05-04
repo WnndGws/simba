@@ -990,15 +990,15 @@ LOBBYINFO_STRUCT = struct.Struct("<B" + "BBBB32sBBBHB" * 22)
 @dataclass
 class Lobby:
     ai_controlled: int
-    team_id: str = ""
-    nationality: str = ""
-    platform: str = ""
-    name: str = ""
+    team_id: str
+    nationality: str
+    platform: str
+    name: str
     car_number: int
-    your_telemetry: str = ""
-    show_online_names: str = ""
+    your_telemetry: str
+    show_online_names: str
     f1_world_tech_level: int
-    ready_status: str = ""
+    ready_status: str
 
 
 @dataclass
