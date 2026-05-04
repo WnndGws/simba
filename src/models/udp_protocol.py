@@ -689,6 +689,10 @@ class ParticipantsPacket:
         ]
         for participant in participants:
             participant.name = participant.name.decode("utf-8").rstrip("\x00")
+            participant.network_telemetry_flag = dd.telemetry_dict[
+                participant.network_telemetry_flag
+            ]
+            participant.platform = dd.platform_dict[participant.platform]
         decoded.append(participants)
 
         return asdict(cls(*decoded))
