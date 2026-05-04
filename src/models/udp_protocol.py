@@ -384,6 +384,7 @@ class LapdataPacket:
 ## -------------------- ##
 ## ------ EVENT ------- ##
 ## -------------------- ##
+# TODO, check decodes in this
 # Header 3
 # 45 bytes
 EVENT_STRUCT = struct.Struct("<4s12s")
