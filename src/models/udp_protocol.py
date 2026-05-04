@@ -708,29 +708,29 @@ CARSETUP_STRUCT = struct.Struct("<" + "BBBBffffBBBBBBBBBffffBf" * 22 + "f")
 
 @dataclass
 class Setup:
-    front_wing: int
-    rear_wing: int
-    on_throttle: int
-    off_throttle: int
-    front_camber: float
-    rear_camber: float
-    front_toe: float
-    rear_toe: float
-    front_suspension: int
-    rear_suspension: int
-    front_anti_roll_bar: int
-    rear_anti_roll_bar: int
-    front_suspension_height: int
-    rear_suspension_height: int
-    brake_pressure: int
-    brake_bias: int
-    engine_braking: int
-    rear_left_tyre_pressure: float
-    rear_right_tyre_pressure: float
-    front_left_tyre_pressure: float
-    front_right_tyre_pressure: float
-    ballast: int
-    fuel_load: float
+    front_wing: int = 0
+    rear_wing: int = 0
+    on_throttle: int = 0
+    off_throttle: int = 0
+    front_camber: float = 0.0
+    rear_camber: float = 0.0
+    front_toe: float = 0.0
+    rear_toe: float = 0.0
+    front_suspension: int = 0
+    rear_suspension: int = 0
+    front_anti_roll_bar: int = 0
+    rear_anti_roll_bar: int = 0
+    front_suspension_height: int = 0
+    rear_suspension_height: int = 0
+    brake_pressure: int = 0
+    brake_bias: int = 0
+    engine_braking: int = 0
+    rear_left_tyre_pressure: float = 0.0
+    rear_right_tyre_pressure: float = 0.0
+    front_left_tyre_pressure: float = 0.0
+    front_right_tyre_pressure: float = 0.0
+    ballast: int = 0
+    fuel_load: float = 0.0
 
 
 @dataclass
@@ -746,13 +746,13 @@ class SetupPacket:
         length_of_data = 23
         number_of_repeats = 22
         setups = [
-            asdict(Setup(*chunk))
+            Setup(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
         decoded.append(values[-1])
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ---------------------------- ##
