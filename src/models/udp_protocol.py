@@ -687,13 +687,8 @@ class ParticipantsPacket:
                 batched(values[1:], length_of_data, strict=True), number_of_repeats
             )
         ]
-        participants = [
-            {
-                k: (v.decode("utf-8").rstrip("\x00") if isinstance(v, bytes) else v)
-                for participant in participants
-                for k, v in participant.items()
-            }
-        ]
+        for participant in participants:
+            participant.name = participant.name.decode("utf-8").rstrip("\x00")
         decoded.append(participants)
 
         return asdict(cls(*decoded))
