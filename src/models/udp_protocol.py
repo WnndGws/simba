@@ -1372,4 +1372,4 @@ class LapPositionPacket:
         ]
         decoded.append(cars)
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
