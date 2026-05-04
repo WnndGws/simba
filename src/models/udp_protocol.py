@@ -1017,6 +1017,14 @@ class LobbyPacket:
             Lobby(*chunk)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
+        for setup in setups:
+            setup.team_id = dd.teams_dict[setup.team_id]
+            setup.nationality = dd.nationality_dict[setup.nationality]
+            setup.platform = dd.platform_dict[setup.platform]
+            setup.your_telemetry = dd.yourtelemetry_dict[setup.your_telemetry]
+            setup.show_online_names = dd.showonlinenames_dict[setup.show_online_names]
+            setup.ready_status = dd.readystatus_dict[setup.ready_status]
+
         decoded.append(setups)
 
         return asdict(cls(decoded))
