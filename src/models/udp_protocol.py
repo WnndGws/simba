@@ -367,16 +367,17 @@ class LapdataPacket:
             Carlap(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
+        for lap in laps:
+            lap[15] = dd.pitstatus_dict[lap[15]]
+            lap[17] = dd.sector_dict[lap[17]]
+            lap[18] = dd.currentlapinvalid_dict[lap[18]]
+            lap[25] = dd.driverstatus_dict[lap[25]]
+            lap[26] = dd.result_dict[lap[26]]
+
         decoded.append(laps)
         # zero indexed
         decoded.append(values[(33 * 22) + 0])
         decoded.append(values[(33 * 22) + 1])
-
-        decoded[15] = dd.pitstatus_dict[decoded[15]]
-        decoded[17] = dd.sector_dict[decoded[17]]
-        decoded[18] = dd.currentlapinvalid_dict[decoded[18]]
-        decoded[25] = dd.driverstatus_dict[decoded[25]]
-        decoded[26] = dd.result_dict[decoded[26]]
 
         return asdict(cls(*decoded))
 
