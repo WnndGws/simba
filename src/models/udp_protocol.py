@@ -363,7 +363,6 @@ class LapdataPacket:
         number_of_repeats = 22
         decoded = []
         laps = [
-            ## TODO; clean below this
             Carlap(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
