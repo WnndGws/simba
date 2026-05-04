@@ -767,37 +767,37 @@ CARTELEMETRY_STRUCT = struct.Struct(
 
 @dataclass
 class Telemetry:
-    speed: int
-    throttle: float
-    steer: float
-    brake: float
-    clutch: int
-    gear: int
-    engine_rpm: int
-    drs: int | str
-    rev_lights_percent: int
-    rev_lights_bit_value: int
-    brakes_rl_temperature: int
-    brakes_rr_temperature: int
-    brakes_fl_temperature: int
-    brakes_fr_temperature: int
-    tyres_rl_surface_temperature: int
-    tyres_rr_surface_temperature: int
-    tyres_fl_surface_temperature: int
-    tyres_fr_surface_temperature: int
-    tyres_rl_inner_temperature: int
-    tyres_rr_inner_temperature: int
-    tyres_fl_inner_temperature: int
-    tyres_fr_inner_temperature: int
-    engine_temperature: int
-    tyres_rl_pressure: float
-    tyres_rr_pressure: float
-    tyres_fl_pressure: float
-    tyres_fr_pressure: float
-    surface_rl_type: int
-    surface_rr_type: int
-    surface_fl_type: int
-    surface_fr_type: int
+    speed: int = 0
+    throttle: float = 0.0
+    steer: float = 0.0
+    brake: float = 0.0
+    clutch: int = 0
+    gear: int = 0
+    engine_rpm: int = 0
+    drs: str = ""
+    rev_lights_percent: int = 0
+    rev_lights_bit_value: int = 0
+    brakes_rl_temperature: int = 0
+    brakes_rr_temperature: int = 0
+    brakes_fl_temperature: int = 0
+    brakes_fr_temperature: int = 0
+    tyres_rl_surface_temperature: int = 0
+    tyres_rr_surface_temperature: int = 0
+    tyres_fl_surface_temperature: int = 0
+    tyres_fr_surface_temperature: int = 0
+    tyres_rl_inner_temperature: int = 0
+    tyres_rr_inner_temperature: int = 0
+    tyres_fl_inner_temperature: int = 0
+    tyres_fr_inner_temperature: int = 0
+    engine_temperature: int = 0
+    tyres_rl_pressure: float = 0.0
+    tyres_rr_pressure: float = 0.0
+    tyres_fl_pressure: float = 0.0
+    tyres_fr_pressure: float = 0.0
+    surface_rl_type: int = 0
+    surface_rr_type: int = 0
+    surface_fl_type: int = 0
+    surface_fr_type: int = 0
 
 
 @dataclass
@@ -815,11 +815,14 @@ class TelemetryPacket:
         length_of_data = 31
         number_of_repeats = 22
         setups = [
-            decode_decoded_enums(Telemetry(*chunk), telemetry_decode_mapping)
+            Telemetry(*chunk)
             for chunk in islice(
                 batched(values, length_of_data, strict=True), number_of_repeats
             )
         ]
+        for telem in setups:
+            telem.drs = dd.drsstatus_dict[telem.drs]
+
         decoded.append(setups)
         decoded.append(values[-3])
         decoded.append(values[-2])
