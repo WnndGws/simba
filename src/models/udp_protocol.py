@@ -990,15 +990,15 @@ LOBBYINFO_STRUCT = struct.Struct("<B" + "BBBB32sBBBHB" * 22)
 @dataclass
 class Lobby:
     ai_controlled: int
-    team_id: int | str
-    nationality: int | str
-    platform: int | str
-    name: str
+    team_id: str = ""
+    nationality: str = ""
+    platform: str = ""
+    name: str = ""
     car_number: int
-    your_telemetry: int | str
-    show_online_names: int | str
+    your_telemetry: str = ""
+    show_online_names: str = ""
     f1_world_tech_level: int
-    ready_status: int | str
+    ready_status: str = ""
 
 
 @dataclass
@@ -1014,7 +1014,7 @@ class LobbyPacket:
         length_of_data = 43
         number_of_repeats = 22
         setups = [
-            decode_decoded_enums(Lobby(*chunk), lobby_decode_mapping)
+            Lobby(*chunk)
             for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
         ]
         decoded.append(setups)
