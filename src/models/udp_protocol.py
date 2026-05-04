@@ -1040,40 +1040,40 @@ CARDAMAGE_STRUCT = struct.Struct("<" + "ffffBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" * 22
 
 @dataclass
 class Damage:
-    tyre_rl_wear_percentage: float
-    tyre_rr_wear_percentage: float
-    tyre_fl_wear_percentage: float
-    tyre_fr_wear_percentage: float
-    tyre_rl_damage_percentage: int
-    tyre_rr_damage_percentage: int
-    tyre_fl_damage_percentage: int
-    tyre_fr_damage_percentage: int
-    brakes_rl_damage_percentage: int
-    brakes_rr_damage_percentage: int
-    brakes_fl_damage_percentage: int
-    brakes_fr_damage_percentage: int
-    tyre_rl_blisters_percentage: int
-    tyre_rr_blisters_percentage: int
-    tyre_fl_blisters_percentage: int
-    tyre_fr_blisters_percentage: int
-    front_left_wing_damage_percentage: int
-    front_right_wing_damage_percentage: int
-    rear_wing_damage_percentage: int
-    floor_damage_percentage: int
-    diffuser_damage_percentage: int
-    sidepod_damage_percentage: int
-    drs_fault: int | str
-    ers_fault: int | str
-    gearbox_damage_percentage: int
-    engine_damage_percentage: int
-    engine_mguh_wear_percentage: int
-    engine_es_wear_percentage: int
-    engine_ce_wear_percentage: int
-    engine_ice_wear_percentage: int
-    engine_mguk_wear_percentage: int
-    engine_tc_wear_percentage: int
-    engine_blown: int | str
-    engine_seized: int | str
+    tyre_rl_wear_percentage: float = 0.0
+    tyre_rr_wear_percentage: float = 0.0
+    tyre_fl_wear_percentage: float = 0.0
+    tyre_fr_wear_percentage: float = 0.0
+    tyre_rl_damage_percentage: int = 0
+    tyre_rr_damage_percentage: int = 0
+    tyre_fl_damage_percentage: int = 0
+    tyre_fr_damage_percentage: int = 0
+    brakes_rl_damage_percentage: int = 0
+    brakes_rr_damage_percentage: int = 0
+    brakes_fl_damage_percentage: int = 0
+    brakes_fr_damage_percentage: int = 0
+    tyre_rl_blisters_percentage: int = 0
+    tyre_rr_blisters_percentage: int = 0
+    tyre_fl_blisters_percentage: int = 0
+    tyre_fr_blisters_percentage: int = 0
+    front_left_wing_damage_percentage: int = 0
+    front_right_wing_damage_percentage: int = 0
+    rear_wing_damage_percentage: int = 0
+    floor_damage_percentage: int = 0
+    diffuser_damage_percentage: int = 0
+    sidepod_damage_percentage: int = 0
+    drs_fault: str = ""
+    ers_fault: str = ""
+    gearbox_damage_percentage: int = 0
+    engine_damage_percentage: int = 0
+    engine_mguh_wear_percentage: int = 0
+    engine_es_wear_percentage: int = 0
+    engine_ce_wear_percentage: int = 0
+    engine_ice_wear_percentage: int = 0
+    engine_mguk_wear_percentage: int = 0
+    engine_tc_wear_percentage: int = 0
+    engine_blown: str = ""
+    engine_seized: str = ""
 
 
 @dataclass
