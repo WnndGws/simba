@@ -24,18 +24,18 @@ HEADER_STRUCT = struct.Struct("<HBBBBBQfIIBB")
 
 @dataclass(slots=True)
 class Header:
-    packet_format: int = 0
-    game_year: int = 0
-    game_major_version: int = 0
-    game_minor_version: int = 0
-    packet_version: int = 0
-    packet_id: int = 0
-    session_uuid: str = ""
-    session_time: float = 0.0
-    frame_id: int = 0
-    overall_frame: int = 0
-    player_car_index: int = 0
-    player2_car_index: int = 0
+    packet_format: int
+    game_year: int
+    game_major_version: int
+    game_minor_version: int
+    packet_version: int
+    packet_id: int
+    session_uuid: str
+    session_time: float
+    frame_id: int
+    overall_frame: int
+    player_car_index: int
+    player2_car_index: int
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 0) -> Self:
@@ -55,24 +55,24 @@ MOTION_STRUCT = struct.Struct("<" + ("ffffffhhhhhhffffff" * 22))
 
 @dataclass(slots=True)
 class Motion:
-    world_position_x: float = 0.0
-    world_position_y: float = 0.0
-    world_position_z: float = 0.0
-    world_velocity_x: float = 0.0
-    world_velocity_y: float = 0.0
-    world_velocity_z: float = 0.0
-    world_forward_direction_x: int = 0
-    world_forward_direction_y: int = 0
-    world_forward_direction_z: int = 0
-    world_right_direction_x: int = 0
-    world_right_direction_y: int = 0
-    world_right_direction_z: int = 0
-    g_force_lateral: float = 0.0
-    g_force_longitudinal: float = 0.0
-    g_force_vertical: float = 0.0
-    yaw_radians: float = 0.0
-    pitch_radians: float = 0.0
-    roll_radians: float = 0.0
+    world_position_x: float
+    world_position_y: float
+    world_position_z: float
+    world_velocity_x: float
+    world_velocity_y: float
+    world_velocity_z: float
+    world_forward_direction_x: int
+    world_forward_direction_y: int
+    world_forward_direction_z: int
+    world_right_direction_x: int
+    world_right_direction_y: int
+    world_right_direction_z: int
+    g_force_lateral: float
+    g_force_longitudinal: float
+    g_force_vertical: float
+    yaw_radians: float
+    pitch_radians: float
+    roll_radians: float
 
 
 @dataclass(slots=True)
@@ -114,20 +114,20 @@ SESSION_STRUCT = struct.Struct(
 
 @dataclass
 class Marshalzone:
-    zone_start_at_lap_percentage: float = 0.0
-    zone_flag_type: str = ""
+    zone_start_at_lap_percentage: float
+    zone_flag_type: str
 
 
 @dataclass
 class Weather:
-    session_type: str = ""
-    time_offset: int = 0
-    weather: str = ""
-    track_temp_c: int = 0
-    track_temp_change_c: str = ""
-    air_temp_c: int = 0
-    air_temp_change_c: str = ""
-    rain_percentage: int = 0
+    session_type: str
+    time_offset: int
+    weather: str
+    track_temp_c: int
+    track_temp_change_c: str
+    air_temp_c: int
+    air_temp_change_c: str
+    rain_percentage: int
 
 
 @dataclass
@@ -314,46 +314,46 @@ LAPDATA_STRUCT = struct.Struct("<" + ("IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB" * 22) 
 
 @dataclass
 class Carlap:
-    last_lap_time_ms: int = 0
-    current_lap_time_ms: int = 0
-    sector1_time_ms_component: int = 0
-    sector1_time_minutes_component: int = 0
-    sector2_time_ms_component: int = 0
-    sector2_time_minutes_component: int = 0
-    delta_to_car_in_front_ms_component: int = 0
-    delta_to_car_in_front_minutes_component: int = 0
-    delta_to_leader_ms_component: int = 0
-    delta_to_leader_minutes_component: int = 0
-    lap_distance_travelled_m: float = 0.0
-    session_distance_travelled_m: float = 0.0
-    safety_car_delta: float = 0.0
-    car_position: int = 0
-    current_lap_number: int = 0
-    pit_status: str = ""
-    number_of_pit_stops: int = 0
-    sector: str = ""
-    current_lap_invalid: str = ""
-    penalties: int = 0
-    total_warnings: int = 0
-    corner_cutting_warnings: int = 0
-    number_unserved_drive_through_pens: int = 0
-    number_unserved_stop_go_pens: int = 0
-    grid_position: int = 0
-    driver_status: str = ""
-    result_status: str = ""
-    pit_lane_timer_active: int = 0
-    pit_lane_time_ms: int = 0
-    pit_lane_stop_time_ms: int = 0
-    pit_stop_must_serve_pen: int = 0
-    fastest_speed_trap_speed_kph: float = 0.0
-    fastest_speed_trap_lap: int = 0
+    last_lap_time_ms: int
+    current_lap_time_ms: int
+    sector1_time_ms_component: int
+    sector1_time_minutes_component: int
+    sector2_time_ms_component: int
+    sector2_time_minutes_component: int
+    delta_to_car_in_front_ms_component: int
+    delta_to_car_in_front_minutes_component: int
+    delta_to_leader_ms_component: int
+    delta_to_leader_minutes_component: int
+    lap_distance_travelled_m: float
+    session_distance_travelled_m: float
+    safety_car_delta: float
+    car_position: int
+    current_lap_number: int
+    pit_status: str
+    number_of_pit_stops: int
+    sector: str
+    current_lap_invalid: str
+    penalties: int
+    total_warnings: int
+    corner_cutting_warnings: int
+    number_unserved_drive_through_pens: int
+    number_unserved_stop_go_pens: int
+    grid_position: int
+    driver_status: str
+    result_status: str
+    pit_lane_timer_active: int
+    pit_lane_time_ms: int
+    pit_lane_stop_time_ms: int
+    pit_stop_must_serve_pen: int
+    fastest_speed_trap_speed_kph: float
+    fastest_speed_trap_lap: int
 
 
 @dataclass
 class LapdataPacket:
     cars: list[Carlap]
-    time_trial_pb_car_idx: int = 0
-    rival_car_idx: int = 0
+    time_trial_pb_car_idx: int
+    rival_car_idx: int
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29):
@@ -378,7 +378,7 @@ class LapdataPacket:
         decoded.append(values[(33 * 22) + 0])
         decoded.append(values[(33 * 22) + 1])
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## -------------------- ##
@@ -642,31 +642,31 @@ PARTICIPANTS_STRUCT = struct.Struct("<B" + "BBBBBBB32sBBHBBBBBBBBBBBBBB" * 22)
 
 @dataclass
 class Participant:
-    is_ai_controlled_flag: int = 0
-    driver_id: int = 0
-    network_id: int = 0
-    team_id: int = 0
-    my_team_flag: int = 0
-    race_number: int = 0
-    nationality: int = 0
-    name: str = ""
-    network_telemetry_flag: str = ""
-    show_online_names: int = 0
-    f1_world_tech_level: int = 0
-    platform: str = ""
-    number_of_colours: int = 0
-    livery_red_1: int = 0
-    livery_green_1: int = 0
-    livery_blue_1: int = 0
-    livery_red_2: int = 0
-    livery_green_2: int = 0
-    livery_blue_2: int = 0
-    livery_red_3: int = 0
-    livery_green_3: int = 0
-    livery_blue_3: int = 0
-    livery_red_4: int = 0
-    livery_green_4: int = 0
-    livery_blue_4: int = 0
+    is_ai_controlled_flag: int
+    driver_id: int
+    network_id: int
+    team_id: int
+    my_team_flag: int
+    race_number: int
+    nationality: int
+    name: str
+    network_telemetry_flag: str
+    show_online_names: int
+    f1_world_tech_level: int
+    platform: str
+    number_of_colours: int
+    livery_red_1: int
+    livery_green_1: int
+    livery_blue_1: int
+    livery_red_2: int
+    livery_green_2: int
+    livery_blue_2: int
+    livery_red_3: int
+    livery_green_3: int
+    livery_blue_3: int
+    livery_red_4: int
+    livery_green_4: int
+    livery_blue_4: int
 
 
 @dataclass
@@ -695,7 +695,7 @@ class ParticipantsPacket:
             participant.platform = dd.platform_dict[participant.platform]
         decoded.append(participants)
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------ ##
@@ -708,29 +708,29 @@ CARSETUP_STRUCT = struct.Struct("<" + "BBBBffffBBBBBBBBBffffBf" * 22 + "f")
 
 @dataclass
 class Setup:
-    front_wing: int = 0
-    rear_wing: int = 0
-    on_throttle: int = 0
-    off_throttle: int = 0
-    front_camber: float = 0.0
-    rear_camber: float = 0.0
-    front_toe: float = 0.0
-    rear_toe: float = 0.0
-    front_suspension: int = 0
-    rear_suspension: int = 0
-    front_anti_roll_bar: int = 0
-    rear_anti_roll_bar: int = 0
-    front_suspension_height: int = 0
-    rear_suspension_height: int = 0
-    brake_pressure: int = 0
-    brake_bias: int = 0
-    engine_braking: int = 0
-    rear_left_tyre_pressure: float = 0.0
-    rear_right_tyre_pressure: float = 0.0
-    front_left_tyre_pressure: float = 0.0
-    front_right_tyre_pressure: float = 0.0
-    ballast: int = 0
-    fuel_load: float = 0.0
+    front_wing: int
+    rear_wing: int
+    on_throttle: int
+    off_throttle: int
+    front_camber: float
+    rear_camber: float
+    front_toe: float
+    rear_toe: float
+    front_suspension: int
+    rear_suspension: int
+    front_anti_roll_bar: int
+    rear_anti_roll_bar: int
+    front_suspension_height: int
+    rear_suspension_height: int
+    brake_pressure: int
+    brake_bias: int
+    engine_braking: int
+    rear_left_tyre_pressure: float
+    rear_right_tyre_pressure: float
+    front_left_tyre_pressure: float
+    front_right_tyre_pressure: float
+    ballast: int
+    fuel_load: float
 
 
 @dataclass
@@ -767,37 +767,37 @@ CARTELEMETRY_STRUCT = struct.Struct(
 
 @dataclass
 class Telemetry:
-    speed: int = 0
-    throttle: float = 0.0
-    steer: float = 0.0
-    brake: float = 0.0
-    clutch: int = 0
-    gear: int = 0
-    engine_rpm: int = 0
-    drs: str = ""
-    rev_lights_percent: int = 0
-    rev_lights_bit_value: int = 0
-    brakes_rl_temperature: int = 0
-    brakes_rr_temperature: int = 0
-    brakes_fl_temperature: int = 0
-    brakes_fr_temperature: int = 0
-    tyres_rl_surface_temperature: int = 0
-    tyres_rr_surface_temperature: int = 0
-    tyres_fl_surface_temperature: int = 0
-    tyres_fr_surface_temperature: int = 0
-    tyres_rl_inner_temperature: int = 0
-    tyres_rr_inner_temperature: int = 0
-    tyres_fl_inner_temperature: int = 0
-    tyres_fr_inner_temperature: int = 0
-    engine_temperature: int = 0
-    tyres_rl_pressure: float = 0.0
-    tyres_rr_pressure: float = 0.0
-    tyres_fl_pressure: float = 0.0
-    tyres_fr_pressure: float = 0.0
-    surface_rl_type: int = 0
-    surface_rr_type: int = 0
-    surface_fl_type: int = 0
-    surface_fr_type: int = 0
+    speed: int
+    throttle: float
+    steer: float
+    brake: float
+    clutch: int
+    gear: int
+    engine_rpm: int
+    drs: str
+    rev_lights_percent: int
+    rev_lights_bit_value: int
+    brakes_rl_temperature: int
+    brakes_rr_temperature: int
+    brakes_fl_temperature: int
+    brakes_fr_temperature: int
+    tyres_rl_surface_temperature: int
+    tyres_rr_surface_temperature: int
+    tyres_fl_surface_temperature: int
+    tyres_fr_surface_temperature: int
+    tyres_rl_inner_temperature: int
+    tyres_rr_inner_temperature: int
+    tyres_fl_inner_temperature: int
+    tyres_fr_inner_temperature: int
+    engine_temperature: int
+    tyres_rl_pressure: float
+    tyres_rr_pressure: float
+    tyres_fl_pressure: float
+    tyres_fr_pressure: float
+    surface_rl_type: int
+    surface_rr_type: int
+    surface_fl_type: int
+    surface_fr_type: int
 
 
 @dataclass
@@ -841,31 +841,31 @@ CARSTATUS_STRUCT = struct.Struct("<" + "BBBBBfffHHBBHBBBbfffBfffB" * 22)
 
 @dataclass
 class Status:
-    traction_control: str = ""
-    anti_lock_brakes: str = ""
-    fuel_mix: str = ""
-    front_brake_bias: int = 0
-    pit_limiter_status: str = ""
-    current_fuel_in_tank_kg: float = 0.0
-    fuel_capacity: float = 0.0
-    fuel_remaining_laps: float = 0.0
-    max_rpm: int = 0
-    idle_rpm: int = 0
-    max_gears: int = 0
-    drs_allowed: str = ""
-    drs_activated_in_distance: int = 0
-    actual_tyre_compound: str = ""
-    visual_tyre_compound: str = ""
-    tyre_age_laps: int = 0
-    vehicle_flags_shown: str = ""
-    engine_power_ice: float = 0.0
-    engine_power_mguk: float = 0.0
-    ers_store_energy: float = 0.0
-    ers_deploy_mode: str = ""
-    ers_harvested_mguk: float = 0.0
-    ers_harvested_mgu_h: float = 0.0
-    ers_deployed_this_lap: float = 0.0
-    network_paused: int = 0
+    traction_control: str
+    anti_lock_brakes: str
+    fuel_mix: str
+    front_brake_bias: int
+    pit_limiter_status: str
+    current_fuel_in_tank_kg: float
+    fuel_capacity: float
+    fuel_remaining_laps: float
+    max_rpm: int
+    idle_rpm: int
+    max_gears: int
+    drs_allowed: str
+    drs_activated_in_distance: int
+    actual_tyre_compound: str
+    visual_tyre_compound: str
+    tyre_age_laps: int
+    vehicle_flags_shown: str
+    engine_power_ice: float
+    engine_power_mguk: float
+    ers_store_energy: float
+    ers_deploy_mode: str
+    ers_harvested_mguk: float
+    ers_harvested_mgu_h: float
+    ers_deployed_this_lap: float
+    network_paused: int
 
 
 @dataclass
@@ -917,42 +917,42 @@ FINALCLASSIFICATION_STRUCT = struct.Struct("<" + "B" + ("BBBBBBBId" + "B" * 27) 
 
 @dataclass
 class Classification:
-    position: int = 0
-    num_laps: int = 0
-    grid_position: int = 0
-    points: int = 0
-    num_pit_stops: int = 0
-    result_status: str = ""
-    result_reason: str = ""
-    best_lap_time_in_ms: int = 0
-    total_race_time: float = 0.0
-    penalties_time: int = 0
-    num_penalties: int = 0
-    num_tyre_stints: int = 0
-    tyre_stint_1_actual_tyre: int = 0
-    tyre_stint_1_visual_tyre: int = 0
-    tyre_stint_1_end_lap: int = 0
-    tyre_stint_2_actual_tyre: int = 0
-    tyre_stint_2_visual_tyre: int = 0
-    tyre_stint_2_end_lap: int = 0
-    tyre_stint_3_actual_tyre: int = 0
-    tyre_stint_3_visual_tyre: int = 0
-    tyre_stint_3_end_lap: int = 0
-    tyre_stint_4_actual_tyre: int = 0
-    tyre_stint_4_visual_tyre: int = 0
-    tyre_stint_4_end_lap: int = 0
-    tyre_stint_5_actual_tyre: int = 0
-    tyre_stint_5_visual_tyre: int = 0
-    tyre_stint_5_end_lap: int = 0
-    tyre_stint_6_actual_tyre: int = 0
-    tyre_stint_6_visual_tyre: int = 0
-    tyre_stint_6_end_lap: int = 0
-    tyre_stint_7_actual_tyre: int = 0
-    tyre_stint_7_visual_tyre: int = 0
-    tyre_stint_7_end_lap: int = 0
-    tyre_stint_8_actual_tyre: int = 0
-    tyre_stint_8_visual_tyre: int = 0
-    tyre_stint_8_end_lap: int = 0
+    position: int
+    num_laps: int
+    grid_position: int
+    points: int
+    num_pit_stops: int
+    result_status: str
+    result_reason: str
+    best_lap_time_in_ms: int
+    total_race_time: float
+    penalties_time: int
+    num_penalties: int
+    num_tyre_stints: int
+    tyre_stint_1_actual_tyre: int
+    tyre_stint_1_visual_tyre: int
+    tyre_stint_1_end_lap: int
+    tyre_stint_2_actual_tyre: int
+    tyre_stint_2_visual_tyre: int
+    tyre_stint_2_end_lap: int
+    tyre_stint_3_actual_tyre: int
+    tyre_stint_3_visual_tyre: int
+    tyre_stint_3_end_lap: int
+    tyre_stint_4_actual_tyre: int
+    tyre_stint_4_visual_tyre: int
+    tyre_stint_4_end_lap: int
+    tyre_stint_5_actual_tyre: int
+    tyre_stint_5_visual_tyre: int
+    tyre_stint_5_end_lap: int
+    tyre_stint_6_actual_tyre: int
+    tyre_stint_6_visual_tyre: int
+    tyre_stint_6_end_lap: int
+    tyre_stint_7_actual_tyre: int
+    tyre_stint_7_visual_tyre: int
+    tyre_stint_7_end_lap: int
+    tyre_stint_8_actual_tyre: int
+    tyre_stint_8_visual_tyre: int
+    tyre_stint_8_end_lap: int
 
 
 @dataclass
@@ -1027,7 +1027,7 @@ class LobbyPacket:
 
         decoded.append(setups)
 
-        return asdict(cls(decoded))
+        return cls(decoded)
 
 
 ## ------------------------- ##
@@ -1174,8 +1174,8 @@ TYRESETS_STRUCT = struct.Struct("<B" + "BBBBBBBhB" * 20 + "B")
 
 @dataclass
 class TyreSets:
-    actual_tyre_compound: str = ""
-    visual_tyre_compound: str = ""
+    actual_tyre_compound: str
+    visual_tyre_compound: str
     wear: int
     available: int
     recommended_session: int
@@ -1217,7 +1217,7 @@ class TyreSetsPacket:
         decoded.append(setups)
         decoded.append(values[-1])
 
-        return asdict(cls(*decoded))
+        return cls(*decoded)
 
 
 ## ------------------------------ ##
