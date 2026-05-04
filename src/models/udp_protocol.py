@@ -364,7 +364,7 @@ class LapdataPacket:
         decoded = []
         laps = [
             ## TODO; clean below this
-            decode_decoded_enums(Carlap(*chunk), lapdata_decode_mapping)
+            Carlap(*chunk)
             for chunk in islice(batched(values, length_of_data), number_of_repeats)
         ]
         decoded.append(laps)
