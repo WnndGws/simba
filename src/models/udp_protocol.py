@@ -1174,8 +1174,8 @@ TYRESETS_STRUCT = struct.Struct("<B" + "BBBBBBBhB" * 20 + "B")
 
 @dataclass
 class TyreSets:
-    actual_tyre_compound: int | str
-    visual_tyre_compound: int | str
+    actual_tyre_compound: str = ""
+    visual_tyre_compound: str = ""
     wear: int
     available: int
     recommended_session: int
@@ -1199,8 +1199,20 @@ class TyreSetsPacket:
         length_of_data = 9
         number_of_repeats = 20
         setups = [
-            asdict(TyreSets(*chunk))
-            for chunk in islice(batched(values[1:], length_of_data), number_of_repeats)
+            TyreSets(
+                dd.actualtyrecompound_dict[_a],
+                dd.visualtyrecompound_dict[_b],
+                _c,
+                _d,
+                _e,
+                _f,
+                _g,
+                _h,
+                _i,
+            )
+            for _a, _b, _c, _d, _e, _f, _g, _h, _i in islice(
+                batched(values[1:], length_of_data), number_of_repeats
+            )
         ]
         decoded.append(setups)
         decoded.append(values[-1])
