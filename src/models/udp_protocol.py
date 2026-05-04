@@ -1296,7 +1296,7 @@ class ExMotionPacket:
     def decode(cls, packet: bytes, offset: int = 29):
         mem = memoryview(packet)
         values = EXTENDEDMOTION_STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 ## ------------------------- ##
