@@ -682,7 +682,7 @@ class ParticipantsPacket:
         length_of_data = 25
         number_of_repeats = 22
         participants = [
-            decode_decoded_enums(Participant(*chunk), participants_decode_mapping)
+            Participant(*chunk)
             for chunk in islice(
                 batched(values[1:], length_of_data, strict=True), number_of_repeats
             )
