@@ -642,31 +642,31 @@ PARTICIPANTS_STRUCT = struct.Struct("<B" + "BBBBBBB32sBBHBBBBBBBBBBBBBB" * 22)
 
 @dataclass
 class Participant:
-    is_ai_controlled_flag: int
-    driver_id: int
-    network_id: int
-    team_id: int
-    my_team_flag: int
-    race_number: int
-    nationality: int
-    name: str
-    network_telemetry_flag: int | str
-    show_online_names: int
-    f1_world_tech_level: int
-    platform: int | str
-    number_of_colours: int
-    livery_red_1: int
-    livery_green_1: int
-    livery_blue_1: int
-    livery_red_2: int
-    livery_green_2: int
-    livery_blue_2: int
-    livery_red_3: int
-    livery_green_3: int
-    livery_blue_3: int
-    livery_red_4: int
-    livery_green_4: int
-    livery_blue_4: int
+    is_ai_controlled_flag: int = 0
+    driver_id: int = 0
+    network_id: int = 0
+    team_id: int = 0
+    my_team_flag: int = 0
+    race_number: int = 0
+    nationality: int = 0
+    name: str = ""
+    network_telemetry_flag: str = ""
+    show_online_names: int = 0
+    f1_world_tech_level: int = 0
+    platform: str = ""
+    number_of_colours: int = 0
+    livery_red_1: int = 0
+    livery_green_1: int = 0
+    livery_blue_1: int = 0
+    livery_red_2: int = 0
+    livery_green_2: int = 0
+    livery_blue_2: int = 0
+    livery_red_3: int = 0
+    livery_green_3: int = 0
+    livery_blue_3: int = 0
+    livery_red_4: int = 0
+    livery_green_4: int = 0
+    livery_blue_4: int = 0
 
 
 @dataclass
