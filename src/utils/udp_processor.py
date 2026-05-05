@@ -16,6 +16,25 @@ from loguru import logger
 from models import udp_protocol
 from utils import udp_receiver
 
+PACKET_MAP = {
+    1349: ("motion", udp_protocol.MotionPacket.decode),
+    753: ("session", udp_protocol.SessionPacket.decode),
+    1285: ("lapdata", udp_protocol.LapdataPacket.decode),
+    45: ("event", udp_protocol.EventPacket.decode),
+    1284: ("participants", udp_protocol.ParticipantsPacket.decode),
+    1133: ("setup", udp_protocol.SetupPacket.decode),
+    1352: ("telemetry", udp_protocol.TelemetryPacket.decode),
+    1239: ("status", udp_protocol.StatusPacket.decode),
+    1042: ("classification", udp_protocol.ClassificationPacket.decode),
+    954: ("lobby", udp_protocol.LobbyPacket.decode),
+    1041: ("damage", udp_protocol.DamagePacket.decode),
+    1460: ("session_history", udp_protocol.SessionHistoryPacket.decode),
+    231: ("tyresets", udp_protocol.TyreSetsPacket.decode),
+    273: ("exmotion", udp_protocol.ExMotionPacket.decode),
+    101: ("timetrial", None),  # placeholder
+    1131: ("lapposition", udp_protocol.LapPositionPacket.decode),
+}
+
 
 def process_named_shared_memory(
     output_queue: Queue,
