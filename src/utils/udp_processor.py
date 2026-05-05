@@ -89,43 +89,10 @@ def decode_udp(packet: bytes, length: int, decode_list: list[str]):
     else:
         decode_list = set(decode_list)
 
-    udp_protocol.Header.decode(packet)
-    match length:
-        case 1349:
-            udp_protocol.MotionPacket.decode(packet)
-        case 753:
-            udp_protocol.SessionPacket.decode(packet)
-        case 1285:
-            udp_protocol.LapdataPacket.decode(packet)
-        case 45:
-            udp_protocol.EventPacket.decode(packet)
-        case 1284:
-            udp_protocol.ParticipantsPacket.decode(packet)
-        case 1133:
-            udp_protocol.SetupPacket.decode(packet)
-        case 1352:
-            udp_protocol.TelemetryPacket.decode(packet)
-        case 1239:
-            udp_protocol.StatusPacket.decode(packet)
-        case 1042:
-            udp_protocol.ClassificationPacket.decode(packet)
-        case 954:
-            udp_protocol.LobbyPacket.decode(packet)
-        case 1041:
-            udp_protocol.DamagePacket.decode(packet)
-        case 1460:
-            udp_protocol.SessionHistoryPacket.decode(packet)
-        case 231:
-            udp_protocol.TyreSetsPacket.decode(packet)
-        case 273:
-            udp_protocol.ExMotionPacket.decode(packet)
-        case 101:
-            # TimeTrial
-            pass
-        case 1131:
-            udp_protocol.LapPositionPacket.decode(packet)
-        case _:
-            pass
+    name, func = PACKET_MAP.get(length)
+    if name is not None and name in decode_list:
+        udp_protocol.Header.decode(packet)
+        func(packet)
 
 
 if __name__ == "__main__":
