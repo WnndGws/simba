@@ -5,6 +5,8 @@
 ## Check `skeletons/tools/py` for a list of currently preferred tools
 """
 
+import asyncio
+import copy
 import struct
 import time
 from multiprocessing import Process, Queue, shared_memory
@@ -12,7 +14,7 @@ from multiprocessing import Process, Queue, shared_memory
 from loguru import logger
 
 from models import udp_protocol
-from utils import udp_collector, udp_receiver
+from utils import udp_receiver
 
 
 def process_named_shared_memory(
@@ -46,40 +48,41 @@ def process_named_shared_memory(
 
 
 def decode_udp(packet: bytes, length: int):
-    udp_collector.handle_header(packet)
+    udp_protocol.Header.decode(packet)
     match length:
         case 1349:
-            udp_collector.handle_motion(packet)
+            udp_protocol.MotionPacket.decode(packet)
         case 753:
-            udp_collector.handle_session(packet)
+            udp_protocol.SessionPacket.decode(packet)
         case 1285:
-            udp_collector.handle_lapdata(packet)
+            udp_protocol.LapdataPacket.decode(packet)
         case 45:
-            udp_collector.handle_event(packet)
+            udp_protocol.EventPacket.decode(packet)
         case 1284:
-            udp_collector.handle_participants(packet)
+            udp_protocol.ParticipantsPacket.decode(packet)
         case 1133:
-            udp_collector.handle_setups(packet)
+            udp_protocol.SetupPacket.decode(packet)
         case 1352:
-            udp_collector.handle_telemetry(packet)
+            udp_protocol.TelemetryPacket.decode(packet)
         case 1239:
-            udp_collector.handle_status(packet)
+            udp_protocol.StatusPacket.decode(packet)
         case 1042:
-            udp_collector.handle_classification(packet)
+            udp_protocol.ClassificationPacket.decode(packet)
         case 954:
-            udp_collector.handle_lobby(packet)
+            udp_protocol.LobbyPacket.decode(packet)
         case 1041:
-            udp_collector.handle_damage(packet)
+            udp_protocol.DamagePacket.decode(packet)
         case 1460:
-            udp_collector.handle_sessionhistory(packet)
+            udp_protocol.SessionHistoryPacket.decode(packet)
         case 231:
-            udp_collector.handle_tyresets(packet)
+            udp_protocol.TyreSetsPacket.decode(packet)
         case 273:
-            udp_collector.handle_exmotion(packet)
+            udp_protocol.ExMotionPacket.decode(packet)
         case 101:
+            # TimeTrial
             pass
         case 1131:
-            udp_collector.handle_positionhistory(packet)
+            udp_protocol.LapPositionPacket.decode(packet)
         case _:
             pass
 

@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-"""#!/usr/bin/env -S uv run --script
-## Run this script using uv
-## init uv with `uv init && uv venv && source .venv/bin/activate`
-"""
+"""Receives the flood of UDP packets and sends them to where they need to go.
 
-"""Receives the flood of UDP packets and sends them to where they need to go
-ie sends them to shared memory"""
+ie sends them to shared memory
+"""
 
 import socket
 import struct
