@@ -108,17 +108,17 @@ SESSION_STRUCT = struct.Struct(
     + "B" * 14
     + "I"
     + "B" * 34
-    + "ff"
+    + "hh"
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class Marshalzone:
     zone_start_at_lap_percentage: float
     zone_flag_type: str
 
 
-@dataclass
+@dataclass(slots=True)
 class Weather:
     session_type: str
     time_offset: int
@@ -130,7 +130,7 @@ class Weather:
     rain_percentage: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SessionPacket:
     weather: str
     track_temp_c: int
@@ -207,8 +207,8 @@ class SessionPacket:
     affects_licence_level_multiplayer: str
     number_of_sessions_in_weekend: int
     weekend_structure: list[int]
-    sector_2_start_distance_m: float
-    sector_3_start_distance_m: float
+    sector_2_start_distance_m: int
+    sector_3_start_distance_m: int
 
     @classmethod
     def decode(cls, packet: bytes, offset: int = 29):
@@ -220,7 +220,7 @@ class SessionPacket:
         decoded.extend(values[idx] for idx in range(16))
 
         list_of_marshal_zones = [
-            Marshalzone(_a, dd.marshal_zone_flag_dict(_b))
+            Marshalzone(_a, dd.marshal_zone_flag_dict[_b])
             for _a, _b in islice(batched(values[16:], 2, strict=True), 21)
         ]
         decoded.append(list_of_marshal_zones)
@@ -248,7 +248,7 @@ class SessionPacket:
 
         weekend_structure = [values[idx + 16 + 42 + 3 + 512 + 41] for idx in range(12)]
         decoded.append(weekend_structure)
-        decoded.append(values[-2])
+        decoded.append(values[12 + 16 + 42 + 3 + 512 + 41 + 1])
         decoded.append(values[-1])
 
         decoded[0] = dd.weather_forecast_dict[decoded[0]]
@@ -282,16 +282,16 @@ class SessionPacket:
         decoded[52] = dd.surfacetype_dict[decoded[52]]
         decoded[53] = dd.lowfuelmode_dict[decoded[53]]
         decoded[54] = dd.racestarts_dict[decoded[54]]
-        decoded[55] = dd.tyretemps_dict[decoded[55]]
+        decoded[55] = dd.tyretemperature_dict[decoded[55]]
         decoded[56] = dd.pitlanetyresim_dict[decoded[56]]
         decoded[57] = dd.cardamage_dict[decoded[57]]
         decoded[58] = dd.cardamagerate_dict[decoded[58]]
         decoded[59] = dd.collisions_dict[decoded[59]]
-        decoded[60] = dd.collisionsfirstlaponly_dict[decoded[60]]
+        decoded[60] = dd.collisionsoffforfirstlaponly_dict[decoded[60]]
         decoded[61] = dd.mpunsafepitrelease_dict[decoded[61]]
         decoded[62] = dd.mpoffforgriefing_dict[decoded[62]]
         decoded[63] = dd.cornercuttingstringency_dict[decoded[63]]
-        decoded[64] = dd.parcferme_dict[decoded[64]]
+        decoded[64] = dd.parcfermerules_dict[decoded[64]]
         decoded[65] = dd.pitstopexperience_dict[decoded[65]]
         decoded[66] = dd.safetycar_dict[decoded[66]]
         decoded[67] = dd.safetycarexperience_dict[decoded[67]]
@@ -312,7 +312,7 @@ class SessionPacket:
 LAPDATA_STRUCT = struct.Struct("<" + ("IIHBHBHBHBfffBBBBBBBBBBBBBBBHHBfB" * 22) + "BB")
 
 
-@dataclass
+@dataclass(slots=True)
 class Carlap:
     last_lap_time_ms: int
     current_lap_time_ms: int
@@ -349,7 +349,7 @@ class Carlap:
     fastest_speed_trap_lap: int
 
 
-@dataclass
+@dataclass(slots=True)
 class LapdataPacket:
     cars: list[Carlap]
     time_trial_pb_car_idx: int
@@ -413,7 +413,7 @@ class EventPacket:
             return subclass._decode_payload(mem, payload_offset)
 
         # Simple events with no payload (SSTA, SEND, etc.)
-        return asdict(cls(code))
+        return cls(code)
 
     def _decode_payload(mem: memoryview, offset: int):
         # for subclasses that only have data
@@ -431,7 +431,7 @@ class FastestLap(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -445,7 +445,7 @@ class Retirement(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = dd.retirementreason_dict[cls.STRUCT.unpack_from(mem, offset)]
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -458,7 +458,7 @@ class DrsDisabled(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = dd.drsdeactivatedreason_dict[cls.STRUCT.unpack_from(mem, offset)]
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -471,7 +471,7 @@ class Teammateinpit(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -484,7 +484,7 @@ class Racewinner(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -521,7 +521,7 @@ class Speedtrap(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -534,7 +534,7 @@ class Startlights(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -547,7 +547,7 @@ class Drivethroughpenalty(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -560,7 +560,7 @@ class Stopgopenalty(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -574,7 +574,7 @@ class Flashback(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -587,7 +587,7 @@ class Buttonpressed(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         (val,) = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(val))
+        return cls(val)
 
 
 @dataclass
@@ -601,7 +601,7 @@ class Overtake(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -615,7 +615,7 @@ class Collision(EventPacket):
     @classmethod
     def _decode_payload(cls, mem: memoryview, offset: int):
         values = cls.STRUCT.unpack_from(mem, offset)
-        return asdict(cls(*values))
+        return cls(*values)
 
 
 @dataclass
@@ -640,12 +640,12 @@ class Safetycar(EventPacket):
 PARTICIPANTS_STRUCT = struct.Struct("<B" + "BBBBBBB32sBBHBBBBBBBBBBBBBB" * 22)
 
 
-@dataclass
+@dataclass(slots=True)
 class Participant:
     is_ai_controlled_flag: int
     driver_id: int
     network_id: int
-    team_id: int
+    team_id: str
     my_team_flag: int
     race_number: int
     nationality: int
@@ -669,7 +669,7 @@ class Participant:
     livery_blue_4: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ParticipantsPacket:
     number_of_active_cars: int
     cars: list[Participant]
@@ -689,6 +689,7 @@ class ParticipantsPacket:
         ]
         for participant in participants:
             participant.name = participant.name.decode("utf-8").rstrip("\x00")
+            participant.team_id = dd.teams_dict[participant.team_id]
             participant.network_telemetry_flag = dd.telemetry_dict[
                 participant.network_telemetry_flag
             ]
@@ -706,7 +707,7 @@ class ParticipantsPacket:
 CARSETUP_STRUCT = struct.Struct("<" + "BBBBffffBBBBBBBBBffffBf" * 22 + "f")
 
 
-@dataclass
+@dataclass(slots=True)
 class Setup:
     front_wing: int
     rear_wing: int
@@ -733,7 +734,7 @@ class Setup:
     fuel_load: float
 
 
-@dataclass
+@dataclass(slots=True)
 class SetupPacket:
     setups: list[Setup]
     player_next_front_wing_value: float
@@ -929,29 +930,29 @@ class Classification:
     penalties_time: int
     num_penalties: int
     num_tyre_stints: int
-    tyre_stint_1_actual_tyre: int
-    tyre_stint_1_visual_tyre: int
+    tyre_stint_1_actual_tyre: str
+    tyre_stint_2_actual_tyre: str
+    tyre_stint_3_actual_tyre: str
+    tyre_stint_4_actual_tyre: str
+    tyre_stint_5_actual_tyre: str
+    tyre_stint_6_actual_tyre: str
+    tyre_stint_7_actual_tyre: str
+    tyre_stint_8_actual_tyre: str
+    tyre_stint_1_visual_tyre: str
+    tyre_stint_2_visual_tyre: str
+    tyre_stint_3_visual_tyre: str
+    tyre_stint_4_visual_tyre: str
+    tyre_stint_5_visual_tyre: str
+    tyre_stint_6_visual_tyre: str
+    tyre_stint_7_visual_tyre: str
+    tyre_stint_8_visual_tyre: str
     tyre_stint_1_end_lap: int
-    tyre_stint_2_actual_tyre: int
-    tyre_stint_2_visual_tyre: int
     tyre_stint_2_end_lap: int
-    tyre_stint_3_actual_tyre: int
-    tyre_stint_3_visual_tyre: int
     tyre_stint_3_end_lap: int
-    tyre_stint_4_actual_tyre: int
-    tyre_stint_4_visual_tyre: int
     tyre_stint_4_end_lap: int
-    tyre_stint_5_actual_tyre: int
-    tyre_stint_5_visual_tyre: int
     tyre_stint_5_end_lap: int
-    tyre_stint_6_actual_tyre: int
-    tyre_stint_6_visual_tyre: int
     tyre_stint_6_end_lap: int
-    tyre_stint_7_actual_tyre: int
-    tyre_stint_7_visual_tyre: int
     tyre_stint_7_end_lap: int
-    tyre_stint_8_actual_tyre: int
-    tyre_stint_8_visual_tyre: int
     tyre_stint_8_end_lap: int
 
 
@@ -974,6 +975,54 @@ class ClassificationPacket:
         for car in cars:
             car.result_status = dd.resultstatus_dict[car.result_status]
             car.result_reason = dd.resultreason_dict[car.result_reason]
+            car.tyre_stint_1_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_1_actual_tyre
+            ]
+            car.tyre_stint_1_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_1_visual_tyre
+            ]
+            car.tyre_stint_2_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_2_actual_tyre
+            ]
+            car.tyre_stint_2_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_2_visual_tyre
+            ]
+            car.tyre_stint_3_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_3_actual_tyre
+            ]
+            car.tyre_stint_3_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_3_visual_tyre
+            ]
+            car.tyre_stint_4_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_4_actual_tyre
+            ]
+            car.tyre_stint_4_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_4_visual_tyre
+            ]
+            car.tyre_stint_5_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_5_actual_tyre
+            ]
+            car.tyre_stint_5_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_5_visual_tyre
+            ]
+            car.tyre_stint_6_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_6_actual_tyre
+            ]
+            car.tyre_stint_6_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_6_visual_tyre
+            ]
+            car.tyre_stint_7_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_7_actual_tyre
+            ]
+            car.tyre_stint_7_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_7_visual_tyre
+            ]
+            car.tyre_stint_8_actual_tyre = dd.actualtyrecompound_dict[
+                car.tyre_stint_8_actual_tyre
+            ]
+            car.tyre_stint_8_visual_tyre = dd.visualtyrecompound_dict[
+                car.tyre_stint_8_visual_tyre
+            ]
         decoded.append(cars)
 
         return cls(*decoded)
@@ -1364,10 +1413,10 @@ class LapPositionPacket:
         decoded = []
         decoded.append(values[0])
         decoded.append(values[1])
-        length_of_data = 50
-        number_of_repeats = 22
+        length_of_data = 22
+        number_of_repeats = 50
         cars = [
-            ",".join(str(list(chunk)))
+            chunk
             for chunk in islice(batched(values[2:], length_of_data), number_of_repeats)
         ]
         decoded.append(cars)
