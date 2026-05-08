@@ -37,11 +37,12 @@ PACKET_MAP = {
 
 
 def process_named_shared_memory(
+    decode_list: list[str],
     output_queue: Queue,
     shared_memory_name: str = "udp_queue",
     shared_memory_size: int = 100 * 1024 * 1024,
-    decode_list: list[str] = [],
 ):
+    logger.info(f"Decoding packets {decode_list}")
     shm = shared_memory.SharedMemory(name=shared_memory_name)
     slot_size = 65535 + 9
     read_idx = 0
@@ -57,7 +58,10 @@ def process_named_shared_memory(
 
                 # Clear flag and process
                 shm.buf[offset + 4 + 65535] = 0
-                output_queue.put_nowait(decode_udp(data, length, decode_list))
+                header, data = decode_udp(data, length, decode_list)
+                if data is not None:
+                    output_queue.put_nowait((header, data))
+                    logger.info("Packet added to queue")
                 read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
             else:
                 time.sleep(0.01)  # Backoff when empty
@@ -90,9 +94,12 @@ def decode_udp(packet: bytes, length: int, decode_list: list[str]):
         decode_list = set(decode_list)
 
     name, func = PACKET_MAP.get(length)
-    if name is not None and name in decode_list:
-        udp_protocol.Header.decode(packet)
-        func(packet)
+    header = udp_protocol.Header.decode(packet)
+    decoded = func(packet) if name is not None and name in decode_list else None
+    logger.debug(f"PROCESSED: {name}, DECODED: {decoded is not None}")
+    logger.trace(header)
+    logger.trace(decoded)
+    return header, decoded
 
 
 if __name__ == "__main__":
@@ -100,4 +107,4 @@ if __name__ == "__main__":
     receiver.start()
 
     queue = Queue()
-    process_named_shared_memory(output_queue=queue)
+    process_named_shared_memory(output_queue=queue, decode_list=["lapdata"])
