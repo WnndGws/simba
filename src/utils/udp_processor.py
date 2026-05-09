@@ -5,8 +5,6 @@
 ## Check `skeletons/tools/py` for a list of currently preferred tools
 """
 
-import asyncio
-import copy
 import struct
 import time
 from multiprocessing import Process, Queue, shared_memory
