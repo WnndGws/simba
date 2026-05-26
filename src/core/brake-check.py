@@ -25,6 +25,7 @@ logger.add(
 @dataclass()
 class Stats:
     name: str = ""
+    lap_number: int = 0
     brake: int = 0
     distance: float = 0.0
     distance25: int = 0
@@ -39,27 +40,16 @@ class Stats:
     def update_brake(self, new_brake_value: int):
         if self.brake != new_brake_value:
             if self.brake == 0 and new_brake_value == 1:
-                dist = self.distance25
-                drs_val = self.drs_status
-
-                existing = self.db.get(self.brake_query.distance25 == dist)
-                if existing is not None:
-                    current_drs = existing.get("drs", [])
-                    current_drs.append(drs_val)
-                    self.db.update(
-                        {"distance25": dist, "drs": current_drs},
-                        self.brake_query.distance25 == dist,
-                    )
-                    logger.warning("Updated db value for distance25")
-                else:
-                    self.db.insert(
-                        {
-                            "distance25": dist,
-                            "drs": [drs_val],
-                        },
-                    )
-                    logger.warning("Added db value for new distance25")
-
+                self.table = self.db.table(f"lap_{self.lap_number}")
+                self.table.insert(
+                    {
+                        "distance": self.distance,
+                        "distance25": self.distance25,
+                        "drs": self.drs_status,
+                        "ers": self.ers_status,
+                    },
+                )
+                logger.warning("Added db value")
             self.brake = new_brake_value
 
 
@@ -82,9 +72,11 @@ def check_braking(item_tuple: tuple):
             logger.debug(player_stats)
         case 2:
             _distance = item_tuple[1].cars[player_idx].lap_distance_travelled_m
+            _lap = item_tuple[1].cars[player_idx].current_lap_number
             player_stats.distance = _distance
             # Round down to nearest multiple of 25
             player_stats.distance25 = floor(_distance / 25) * 25
+            player_stats.lap_number = _lap
             logger.debug(player_stats)
         case 7:
             _ers = item_tuple[1].statuses[player_idx].ers_deploy_mode

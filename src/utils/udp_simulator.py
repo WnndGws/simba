@@ -5,29 +5,34 @@ import struct
 import time
 from multiprocessing import shared_memory
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
 
 def udp_receiver(
+    rate_hz: int = 20,
     file_path: str = "tests/race.log",
-    rate_hz: float = 20.0,
     shared_memory_name: str = "udp_queue",
     shared_memory_size: int = 100 * 1024 * 1024,
 ):
     # Create named shared memory visible to other programs
     try:
         shm = shared_memory.SharedMemory(
-            create=True, size=shared_memory_size, name=shared_memory_name
+            create=True,
+            size=shared_memory_size,
+            name=shared_memory_name,
         )
     except FileExistsError:
         shm = shared_memory.SharedMemory(
-            create=False, size=shared_memory_size, name=shared_memory_name
+            create=False,
+            size=shared_memory_size,
+            name=shared_memory_name,
         )
         shm.unlink()
         shm = shared_memory.SharedMemory(
-            create=True, size=shared_memory_size, name=shared_memory_name
+            create=True,
+            size=shared_memory_size,
+            name=shared_memory_name,
         )
 
     # slot: [length:4][data:65535 bytes region][ready_flag:1]
@@ -77,7 +82,8 @@ def udp_receiver(
                     # Truncate if larger than slot capacity (65535)
                     if len(data_bytes) > 65535:
                         logger.warning(
-                            "Line {} longer than 65535 bytes; truncating", line_no
+                            "Line {} longer than 65535 bytes; truncating",
+                            line_no,
                         )
                         data_bytes = data_bytes[:65535]
 

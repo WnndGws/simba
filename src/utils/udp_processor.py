@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue, shared_memory
 from loguru import logger
 
 from models import udp_protocol
-from utils import udp_receiver
+from utils import udp_simulator
 
 PACKET_MAP = {
     1349: ("motion", udp_protocol.MotionPacket.decode),
@@ -59,7 +59,9 @@ def process_named_shared_memory(
                 header, data = decode_udp(data, length, decode_list)
                 if data is not None:
                     output_queue.put_nowait((header, data))
-                    logger.info("Packet added to queue")
+                    logger.info(
+                        f"Packet added to queue: <header.packet_id>:{header.packet_id}"
+                    )
                 read_idx = (read_idx + 1) % (shared_memory_size // slot_size)
             else:
                 time.sleep(0.01)  # Backoff when empty
@@ -101,7 +103,7 @@ def decode_udp(packet: bytes, length: int, decode_list: list[str]):
 
 
 if __name__ == "__main__":
-    receiver = Process(target=udp_receiver.udp_receiver, daemon=True)
+    receiver = Process(target=udp_simulator.udp_receiver, daemon=True)
     receiver.start()
 
     queue = Queue()
