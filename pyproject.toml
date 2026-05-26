@@ -19,6 +19,7 @@ dependencies = [
   "qtpy>=2.4.3",
   "sse-starlette>=3.3.2",
   "textual>=8.0.0",
+  "tinydb>=4.8.2",
   "uvicorn>=0.41.0",
 ]
 

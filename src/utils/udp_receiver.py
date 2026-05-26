@@ -10,24 +10,6 @@ import sys
 from multiprocessing import shared_memory
 
 from loguru import logger
-from rich.logging import RichHandler
-
-# Setup logger with RichHandler for better output
-logger.remove()
-logger.add(
-    sys.stderr,
-)
-logger.configure(
-    handlers=[
-        {"sink": "udp.log", "level": "WARNING"},
-        {
-            "sink": RichHandler(
-                rich_tracebacks=True, show_path=True, tracebacks_show_locals=True
-            ),
-            "level": "INFO",
-        },
-    ]
-)
 
 
 def udp_receiver(
@@ -65,6 +47,7 @@ def udp_receiver(
             data, addr = sock.recvfrom(65535)
             if not data:
                 continue
+            # logger.critical(data)
             offset = write_idx * slot_size
 
             # Write atomically: length + data + ready flag
